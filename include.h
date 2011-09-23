@@ -6,12 +6,20 @@
 // stdlib includes
 
 #include <assert.h>
+#include <stddef.h>
+#include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
 
 // System includes
+#include <dirent.h>
 #include <pthread.h>
+#include <sys/types.h>
 
 // Project files
+// Data structures
+#include "list.h"
 //   Threading
 #include "sthreads.h"
 #include "scontrol.h"

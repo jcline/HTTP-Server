@@ -1,11 +1,13 @@
 CC			= gcc
-CFLAGS		= -Wall ${DEBUGFLAG}
+CFLAGS		= -Wall -std=c99 -fstrict-aliasing ${DEBUGFLAG}
+#CFLAGS		= -Wall -std=c99 -fstrict-aliasing ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O2
-DEBUGFLAG	= -g
+DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
 LFLAGS		= -lpthread
 
 SRC = \
+			list.c \
 			sthreads.c \
 			rthreads.c \
 			scontrol.c \
