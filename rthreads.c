@@ -11,22 +11,28 @@ void *rt_thread(void* args) {
 	FILE* restrict fp;
 	size_t sz = 0;
 	char* restrict fd;
-	while( (val = pop_front(filename_list)) ) {
-		fp = fopen((const char* restrict) val, "r");
-		if(fp) {
-			// Get size of file
-			fseek(fp, 0L, SEEK_END);
-			sz = ftell(fp);	
-			fseek(fp, 0L, SEEK_SET);
+	while(1) {
+		val = pop_front(filename_list);
+		if(val) {
+			fp = fopen((const char* restrict) val, "r");
+			if(fp) {
+				// Get size of file
+				fseek(fp, 0L, SEEK_END);
+				sz = ftell(fp);	
+				fseek(fp, 0L, SEEK_SET);
 
-			// Allocate memory
-			fd = (char* restrict) malloc(sizeof(char) * sz);
+				// Allocate memory
+				fd = (char* restrict) malloc(sizeof(char) * sz + 1);
 
-			fread((void*) fd, sz, sizeof(char), fp);
+				fread((void*) fd, sz, sizeof(char), fp);
+				fd[sz] = '\0';
 
-			push_back(file_list, fd, sz);
+				printf("%s\n", fd);
 
-			free(val);
+				push_back(file_list, fd, sz);
+
+				free(val);
+			}
 		}
 	}
 

@@ -13,7 +13,9 @@ int main(int argc, char** argv) {
 	strcpy(root_dir,".");
 
 	rc_startup();
+	printf("rt started\n");
 	rc_readdir(root_dir);
+	printf("dir read spawn\n");
 	rc_stop();
 
 	return 0;
