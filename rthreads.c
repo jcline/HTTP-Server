@@ -39,9 +39,12 @@ void *rt_thread(void* args) {
 			fseek(fp, 0L, SEEK_SET);
 
 			// Allocate memory
-			fd = (char* restrict) malloc(sizeof(char) * sz);
+			fd = (char* restrict) malloc(sizeof(char) * sz + 1);
 
 			fread((void*) fd, sz, sizeof(char), fp);
+			fd[sz] = '\0';
+
+			printf("%s\n", fd);
 
 			push_back(file_list, fd, sz);
 
