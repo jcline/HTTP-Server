@@ -16,6 +16,7 @@ struct list_t {
 	size_t size, cache_size;
 	void* restrict * cache;
 	pthread_mutex_t global_lock;
+	pthread_cond_t work;
 };
 
 

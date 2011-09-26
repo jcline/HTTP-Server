@@ -2,6 +2,7 @@
 
 static struct list_t filename_list;
 static struct list_t file_list;
+static struct rt_args_t * args;
 
 int init_check = 0;
 
@@ -14,18 +15,19 @@ void rc_startup() {
 	init(&filename_list);
 	init(&file_list);
 
+	args = (struct rt_args_t *) malloc(sizeof(struct rt_args_t));
+	args->filename_list = &filename_list;
+	args->file_list = &file_list;
+	args->done = 0;
+
 	{
 	rthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_READ_THREADS);
-
-	struct rt_args_t args;
-	args.filename_list = &filename_list;
-	args.file_list = &file_list;
 
 	int i;
 	for(i = 0; i < MAX_READ_THREADS; ++i) {
 		rthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
 		assert(rthreads[i]);
-		pthread_create(rthreads[i], NULL, rt_thread, (void*) &args);
+		pthread_create(rthreads[i], NULL, rt_thread, (void*) args);
 	}
 	}
 }
@@ -33,10 +35,13 @@ void rc_startup() {
 void rc_stop() {
 	assert(init_check);
 	//join
+	args->done = 1;
 	int i;
 	for(i = 0; i < MAX_READ_THREADS; ++i) {
 		pthread_join(*(rthreads[i]), NULL);
 	}
+
+	free(args);
 
 	destroy(&filename_list);
 	destroy(&file_list);

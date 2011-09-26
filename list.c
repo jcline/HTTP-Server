@@ -1,11 +1,27 @@
 #include "list.h"
 
-void* pop_back(struct list_t* restrict list) {
-	pthread_mutex_lock(&list->global_lock);
-	assert(list);
+struct timespec gettime() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	struct timespec ts;
 
-	if(!list->size) {
-		return NULL;
+	ts.tv_sec = tv.tv_sec;
+	ts.tv_nsec = tv.tv_usec * 1000;
+
+	ts.tv_sec += 1; // How long to wait
+
+	return ts;
+}
+
+void* pop_back(struct list_t* restrict list) {
+	assert(list);
+	pthread_mutex_lock(&(list->global_lock));
+
+	while(!list->size) {
+		struct timespec ts = gettime();
+		if (pthread_cond_timedwait(&(list->work), &(list->global_lock), &ts) == ETIMEDOUT) {
+			return NULL;
+		}
 	}
 
 	struct node_t *restrict ret = list->tail;
@@ -24,16 +40,19 @@ void* pop_back(struct list_t* restrict list) {
 	assert(list->tail != ret);
 	void* ret_data = ret->data;
 	free(ret);
-	pthread_mutex_unlock(&list->global_lock);
+	pthread_mutex_unlock(&(list->global_lock));
 	return ret_data;
 }
 
 void* pop_front(struct list_t* restrict list) {
-	pthread_mutex_lock(&list->global_lock);
 	assert(list);
+	pthread_mutex_lock(&(list->global_lock));
 
-	if(!list->size) {
-		return NULL;
+	while(!list->size) {
+		struct timespec ts = gettime();
+		if (pthread_cond_timedwait(&(list->work), &(list->global_lock), &ts) == ETIMEDOUT) {
+			return NULL;
+		}
 	}
 
 	struct node_t *restrict ret = list->head;
@@ -52,13 +71,13 @@ void* pop_front(struct list_t* restrict list) {
 	assert(list->head != ret);
 	void* ret_data = ret->data;
 	free(ret);
-	pthread_mutex_unlock(&list->global_lock);
+	pthread_mutex_unlock(&(list->global_lock));
 	return ret_data;
 }
 
 void push_back(struct list_t* restrict list, void* restrict a, size_t s) {
-	pthread_mutex_lock(&list->global_lock);
 	assert(list);
+	pthread_mutex_lock(&(list->global_lock));
 
 	struct node_t *restrict x = (struct node_t*) malloc( sizeof(struct node_t) );
 	assert(x);
@@ -83,13 +102,17 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s) {
 	assert(list->head);
 	assert(list->tail);
 
+	if(list->size > 1)
+		pthread_cond_broadcast(&(list->work));
+	else
+		pthread_cond_signal(&(list->work));
 
-	pthread_mutex_unlock(&list->global_lock);
+	pthread_mutex_unlock(&(list->global_lock));
 }
 
 void push_front(struct list_t* restrict list, void* restrict a, size_t s) {
-	pthread_mutex_lock(&list->global_lock);
 	assert(list);
+	pthread_mutex_lock(&(list->global_lock));
 
 	struct node_t *x = (struct node_t*) malloc( sizeof(struct node_t) );
 	assert(x);
@@ -113,7 +136,7 @@ void push_front(struct list_t* restrict list, void* restrict a, size_t s) {
 	assert(list->head);
 	assert(list->tail);
 
-	pthread_mutex_unlock(&list->global_lock);
+	pthread_mutex_unlock(&(list->global_lock));
 }
 
 void destroy(struct list_t* restrict list) {
@@ -143,7 +166,8 @@ void init(struct list_t* restrict list) {
 	list->size = 0;
 	list->cache_size = 10;
 	list->cache = (void ** restrict) malloc(sizeof(void*) * list->cache_size);
-	pthread_mutex_init(&list->global_lock, NULL);
+	pthread_mutex_init(&(list->global_lock), NULL);
+	pthread_cond_init(&(list->work), NULL);
 }
 
 struct node_t* getnode(struct list_t* restrict list, size_t i) {
@@ -152,7 +176,6 @@ struct node_t* getnode(struct list_t* restrict list, size_t i) {
 	for(it = list->head; it != NULL; ++j) {
 		if( i == j )  {
 			if(it->data != NULL) {
-				pthread_mutex_unlock(&list->global_lock);
 				return it;
 			}
 			else
@@ -164,13 +187,13 @@ struct node_t* getnode(struct list_t* restrict list, size_t i) {
 }
 
 void* getval(struct list_t* restrict list, size_t i) {
-	pthread_mutex_lock(&list->global_lock);
 	assert(list);
+	pthread_mutex_lock(&(list->global_lock));
 	assert(list->head);
 	assert(i < list->size);
 
 	if(i >= list->size) {
-		pthread_mutex_unlock(&list->global_lock);
+		pthread_mutex_unlock(&(list->global_lock));
 		return NULL;
 	}
 
@@ -180,7 +203,7 @@ void* getval(struct list_t* restrict list, size_t i) {
 	for(it = list->head; it != NULL; ++j) {
 		if( i == j )  {
 			if( it->data ) {
-				pthread_mutex_unlock(&list->global_lock);
+				pthread_mutex_unlock(&(list->global_lock));
 				return it->data;
 			}
 			else
@@ -189,18 +212,18 @@ void* getval(struct list_t* restrict list, size_t i) {
 		it = it->next;
 	}
 
-	pthread_mutex_unlock(&list->global_lock);
+	pthread_mutex_unlock(&(list->global_lock));
 	return NULL;
 }
 
 void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s) {
-	pthread_mutex_lock(&list->global_lock);
 	assert(list);
+	pthread_mutex_lock(&(list->global_lock));
 	assert(list->head);
 	assert(a);
 	assert(i < list->size);
 	if(i >= list->size) {
-		pthread_mutex_unlock(&list->global_lock);
+		pthread_mutex_unlock(&(list->global_lock));
 		return;
 	}
 
@@ -210,6 +233,6 @@ void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s)
 	data->data = malloc(sizeof(char)*s);
 	memcpy(data->data, a, s);
 
-	pthread_mutex_unlock(&list->global_lock);
+	pthread_mutex_unlock(&(list->global_lock));
 }
 

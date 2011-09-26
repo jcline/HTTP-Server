@@ -1,6 +1,6 @@
 CC			= gcc
-CFLAGS		= -Wall -std=c99 -fstrict-aliasing ${DEBUGFLAG}
-#CFLAGS		= -Wall -std=c99 -fstrict-aliasing ${OPTFLAG} -DNDEBUG
+CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${DEBUGFLAG} 
+#CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O2
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
