@@ -4,12 +4,12 @@ static struct list_t filename_list;
 static struct list_t file_list;
 static struct rt_args_t * args;
 
-int init_check = 0;
+static int init_check = 0;
 
-pthread_t** rthreads;
+static pthread_t** rthreads;
 
 
-void rc_startup() {
+struct list_t * rc_startup() {
 	assert(!init_check);
 	init_check = 1;
 	init(&filename_list);
@@ -30,6 +30,8 @@ void rc_startup() {
 		pthread_create(rthreads[i], NULL, rt_thread, (void*) args);
 	}
 	}
+
+	return &file_list;
 }
 
 void rc_stop() {
@@ -78,7 +80,7 @@ void rc_readdir(char* restrict dir) {
 }
 
 void rc_readfile(char* restrict name) {
-	push_back(&filename_list, name, strlen(name)+1);
+	push_back(&filename_list, name, strlen(name)+1, NULL, 0);
 }
 
 

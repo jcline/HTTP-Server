@@ -44,9 +44,7 @@ void *rt_thread(void* args) {
 			fread((void*) fd, sz, sizeof(char), fp);
 			fd[sz] = '\0';
 
-			printf("%s\n", fd);
-
-			push_back(file_list, fd, sz);
+			push_back(file_list, fd, sz, NULL, 0);
 
 			free(val);
 		}

@@ -12,7 +12,7 @@ struct rc_file_t{
 };
 
 
-void rc_startup();
+struct list_t * rc_startup();
 void rc_readdir(char* restrict dir);
 void rc_readfile(char* restrict name);
 void rc_stop();

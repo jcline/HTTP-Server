@@ -9,6 +9,12 @@ struct node_t {
 	void * restrict data;
 	// next should never equal prev, if gcc is smart enough this may speed up list operations
 	struct node_t * restrict next, * restrict prev;
+	// size of data
+	size_t size;
+	// a label/name for this item
+	char * restrict label;
+	// misc info
+	int misc;
 };
 
 struct list_t {
@@ -20,8 +26,10 @@ struct list_t {
 };
 
 
-void push_front(struct list_t* restrict list, void* restrict a, size_t s);
-void push_back(struct list_t* restrict list, void* restrict a, size_t s);
+void push_front(struct list_t* restrict list, void* restrict a, size_t s, 
+    char* restrict label, int misc);
+void push_back(struct list_t* restrict list, void* restrict a, size_t s,
+    char* restrict label, int misc);
 
 void* pop_front(struct list_t* restrict list);
 void* pop_back(struct list_t* restrict list);

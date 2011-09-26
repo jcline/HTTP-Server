@@ -8,7 +8,7 @@ struct timespec gettime() {
 	ts.tv_sec = tv.tv_sec;
 	ts.tv_nsec = tv.tv_usec * 1000;
 
-	ts.tv_sec += 1; // How long to wait
+	ts.tv_sec += 5; // How long to wait
 
 	return ts;
 }
@@ -75,7 +75,8 @@ void* pop_front(struct list_t* restrict list) {
 	return ret_data;
 }
 
-void push_back(struct list_t* restrict list, void* restrict a, size_t s) {
+void push_back(struct list_t* restrict list, void* restrict a, size_t s,
+    char * restrict label, int misc) {
 	assert(list);
 	pthread_mutex_lock(&(list->global_lock));
 
@@ -84,6 +85,10 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s) {
 
 	x->data = (void * restrict) malloc(sizeof(char)*s);
 	memcpy(x->data, a, s);
+
+	x->size = s;
+	x->misc = misc;
+	x->label = NULL;
 
 	x->next = NULL;
 
@@ -110,7 +115,8 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s) {
 	pthread_mutex_unlock(&(list->global_lock));
 }
 
-void push_front(struct list_t* restrict list, void* restrict a, size_t s) {
+void push_front(struct list_t* restrict list, void* restrict a, size_t s,
+    char * restrict label, int misc) {
 	assert(list);
 	pthread_mutex_lock(&(list->global_lock));
 
@@ -119,6 +125,10 @@ void push_front(struct list_t* restrict list, void* restrict a, size_t s) {
 
 	x->data = (void * restrict) malloc(sizeof(char)*s);
 	memcpy(x->data, a, s);
+
+	x->size = s;
+	x->misc = misc;
+	x->label = NULL;
 
 	x->prev = NULL;
 
