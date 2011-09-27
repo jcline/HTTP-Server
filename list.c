@@ -14,6 +14,17 @@ struct timespec gettime() {
 }
 
 void* pop_back(struct list_t* restrict list) {
+	struct node_t* ret = pop_back_n(list);
+	if(ret) {
+		void* ret_data = ret->data;
+		free(ret);
+		return ret_data;
+	}
+	else
+		return NULL;
+}
+
+struct node_t* pop_back_n(struct list_t* restrict list) {
 	assert(list);
 	pthread_mutex_lock(&(list->global_lock));
 
@@ -38,13 +49,22 @@ void* pop_back(struct list_t* restrict list) {
 	}
 
 	assert(list->tail != ret);
-	void* ret_data = ret->data;
-	free(ret);
 	pthread_mutex_unlock(&(list->global_lock));
-	return ret_data;
+	return ret;
 }
 
 void* pop_front(struct list_t* restrict list) {
+	struct node_t* ret = pop_front_n(list);
+	if(ret) {
+		void* ret_data = ret->data;
+		free(ret);
+		return ret_data;
+	}
+	else
+		return NULL;
+}
+
+struct node_t* pop_front_n(struct list_t* restrict list) {
 	assert(list);
 	pthread_mutex_lock(&(list->global_lock));
 
@@ -69,10 +89,8 @@ void* pop_front(struct list_t* restrict list) {
 	}
 
 	assert(list->head != ret);
-	void* ret_data = ret->data;
-	free(ret);
 	pthread_mutex_unlock(&(list->global_lock));
-	return ret_data;
+	return ret;
 }
 
 void push_back(struct list_t* restrict list, void* restrict a, size_t s,

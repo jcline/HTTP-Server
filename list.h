@@ -33,6 +33,8 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s,
 
 void* pop_front(struct list_t* restrict list);
 void* pop_back(struct list_t* restrict list);
+struct node_t* pop_front_n(struct list_t* restrict list);
+struct node_t* pop_back_n(struct list_t* restrict list);
 
 void destroy(struct list_t* restrict list);
 void init(struct list_t* restrict list);

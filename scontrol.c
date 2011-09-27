@@ -18,6 +18,10 @@ void * sc_manager(void* args) {
     exit(1);
   }
 
+	int TRUE = 1;
+	setsockopt(s_socket, SOL_SOCKET, SO_REUSEADDR, (char*) &TRUE, sizeof(TRUE));
+
+
   s_addr.sin_addr.s_addr=INADDR_ANY;
   s_addr.sin_port=htons(s_port);
   s_addr.sin_family=AF_INET;
@@ -34,22 +38,18 @@ void * sc_manager(void* args) {
     exit(1);
   }
 
-  int c_socket, rc;
-  char buffer[250];
-  char * nul_loc = &buffer[249];
+  int c_socket;
+  char buffer[1];
 
   printf("listening\n");
   while(1) {
     c_socket = accept( s_socket, NULL, (socklen_t *) s_addr_sz);
-    printf("new connection\n");
+    printf("new connection\t%d\n", c_socket);
 
-    rc = read( c_socket, buffer, 249);
-    *nul_loc = '\0';
+		push_back(&request_list, buffer, 1, NULL, c_socket);
+			//write(c_socket,"test",5);
 
-    if(rc > 0)
-      push_back(&request_list, buffer, rc, NULL, c_socket);
-    else
-      perror("read error");
+		//close(c_socket);
 
   }
 
