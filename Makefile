@@ -1,5 +1,5 @@
 CC			= gcc
-CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${DEBUGFLAG} 
+CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${DEBUGFLAG} -DDEBUG
 #CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O2
 DEBUGFLAG	= -g3 -ggdb 

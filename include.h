@@ -11,16 +11,17 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 
 // System includes
 #include <dirent.h>
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <sys/errno.h>
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 // Project files
 // Data structures

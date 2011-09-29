@@ -39,6 +39,8 @@ struct node_t* pop_back_n(struct list_t* restrict list);
 void destroy(struct list_t* restrict list);
 void init(struct list_t* restrict list);
 
+struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, size_t i);
+struct node_t* getval_n(struct list_t* restrict list, size_t i);
 void* getval(struct list_t* restrict list, size_t i);
 void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s);
 

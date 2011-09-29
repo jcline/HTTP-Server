@@ -1,6 +1,11 @@
 #include "include.h"
 
+extern int errno;
+
+static char* fourzerofour = "404: File not Found\n\r";
+
 void * st_thread(void* args) {
+	size_t BUFFER_SIZE = 500;
 	assert(args);
 
 	struct st_args_t * params = (struct st_args_t *) args;
@@ -11,14 +16,15 @@ void * st_thread(void* args) {
 	assert(params->request_list);
 	assert(params->file_list);
 
-	struct node_t* restrict val;
+	struct node_t* restrict val, * restrict file;
 	ssize_t i = 0, sz = 0;
-	int c_socket, rc;
-	char* ptr = NULL, *endtrans = "\n\r";
+	int c_socket, rc, rs, flags = 0;
+	char* ptr = NULL, *endtrans = "\n\r\0",
+		*buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
+		*tok = NULL, *del = " ";
 	while(1) { 
 retry:
 		val = pop_front_n(request_list);
-		printf("stuffing %d\t", params->done);
 
 		if(params->done)
 			return NULL;
@@ -26,45 +32,93 @@ retry:
 		if(!val)
 			continue;
 
-		sz = val->size;
 		c_socket = val->misc;
-		printf("%d\t", sz);
-		printf("%d\n", c_socket);
 
-		goto writer;
+    if (-1 == (flags = fcntl(c_socket, F_GETFL, 0)))
+        flags = 0;
+    fcntl(c_socket, F_SETFL, flags | O_NONBLOCK);
+
+		ptr = buffer;
+		rs = BUFFER_SIZE;
+		rc = 0;
 		do {
-			rc = read(c_socket, ptr, 250);
-			ptr += rc;
+			rs -= rc;
+			if(rs <= 0) {
+				rs = BUFFER_SIZE + 1000;
+				ptr = (char *) realloc(buffer, rs);
+				ptr += BUFFER_SIZE;
+				BUFFER_SIZE = rs;
+			}
+
+			// Read until theres nothing left
+			rc = read(c_socket, ptr, rs);
 			if(rc == -1) {
+				if(errno == EAGAIN)
+					break;
 				perror("Read error");
 				goto retry;
 			}
+			ptr += rc;
 		} while(rc != 0);
-writer:
+		++ptr;
+		ptr = '\0';
 
-		ptr = getval(file_list,0);
-		for(i = 0; i < sz; ++i) {
+    fcntl(c_socket, F_SETFL, flags);
+
+		// Figure out what we should look up
+		{
+			ptr = strtok_r(buffer, del, &tok);
+			if(tok == NULL) // there was no message we can work with
+				goto close;
+			// We just want the GET and the path
+			if(strncmp(ptr, "GET", 3))
+				goto close;
+			
+			ptr = strtok_r(NULL, del, &tok);
+			if(ptr[0] != '/')
+				goto fof;
+
+			// we want to find the length of the path
+			rs = strtok_r(NULL, del, &tok) - ptr;
+		}
+
+
+		file = getval_n_l(file_list,ptr,0);
+		if(!file)
+			goto fof;
+		ptr = (char * restrict) file->data;
+		sz = file->size;
+		for(i = 0; i < sz; ) {
 		  rc = write( c_socket, &ptr[i], sz-i); 
+		  write( 0, &ptr[i], sz-i); 
 		  if( rc < 0 ) {
 		    perror("Could not write");
-		    break;
+				goto close;
 		  }
 		  i += rc;
 		}
 		ptr = endtrans;
 		rc = write( c_socket, &ptr, 2);
 
+fof:
+		
+		write(c_socket, fourzerofour, strlen(fourzerofour));
 
-		if( close(c_socket) == -1 ) {
-		  perror("Could not close c_socket");
-		  exit(1);
-		}
 
+close:
 		free(val->data);
 		free(val);
 
+		if( close(c_socket) == -1 ) {
+		  perror("Could not close c_socket");
+			goto retry;
+		}
+
 	}
-	printf("wat\n");
+
+	free(buffer);
 
 	return NULL;
 }
+
+

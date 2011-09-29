@@ -44,7 +44,9 @@ void * sc_manager(void* args) {
   printf("listening\n");
   while(1) {
     c_socket = accept( s_socket, NULL, (socklen_t *) s_addr_sz);
+#ifndef NDEBUG // We want the delegation to be as fast as possible
     printf("new connection\t%d\n", c_socket);
+#endif
 
 		push_back(&request_list, buffer, 1, NULL, c_socket);
 			//write(c_socket,"test",5);
