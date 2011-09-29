@@ -86,7 +86,13 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s,
 
 	x->size = s;
 	x->misc = misc;
-	x->label = NULL;
+	if(label) {
+		size_t s = strlen(label) + 1;
+		x->label = (char* restrict) malloc(sizeof(char)*s);
+		memcpy(x->label, label, s);
+	}
+	else
+		x->label = NULL;
 
 	x->next = NULL;
 
@@ -129,7 +135,12 @@ void push_front(struct list_t* restrict list, void* restrict a, size_t s,
 
 	x->size = s;
 	x->misc = misc;
-	x->label = NULL;
+	if(label) {
+		x->label = (char* restrict) malloc(sizeof(char)*strlen(label));
+		memcpy(x->label, label, strlen(label));
+	}
+	else
+		x->label = NULL;
 
 	x->prev = NULL;
 
@@ -228,18 +239,13 @@ struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, s
 	assert(i);
 	pthread_mutex_lock(&(list->global_lock));
 	assert(list->head);
-	assert(i < list->size);
-
-	if(i >= list->size) {
-		pthread_mutex_unlock(&(list->global_lock));
-		return NULL;
-	}
 
 	struct node_t *it;
 	size_t j = 0;
 	for(it = list->head; it != NULL; ++j) {
 		if( !strncmp(it->label, label, i) )  {
 			if(it->data != NULL) {
+				pthread_mutex_unlock(&(list->global_lock));
 				return it;
 			}
 			else

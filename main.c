@@ -1,7 +1,7 @@
 #include "include.h"
 
 size_t MAX_READ_THREADS = 1;
-size_t MAX_SERVE_THREADS = 1;
+size_t MAX_SERVE_THREADS = 10;
 
 int main(int argc, char** argv) {
 	// Start logging for error messages etc

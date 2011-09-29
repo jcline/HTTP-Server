@@ -22,6 +22,9 @@ void * st_thread(void* args) {
 	char* ptr = NULL, *endtrans = "\n\r\0",
 		*buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 		*tok = NULL, *del = " ";
+	for(i = 0; i < BUFFER_SIZE; ++i) {
+		buffer[i] = '\0';
+	}
 	while(1) { 
 retry:
 		val = pop_front_n(request_list);
@@ -41,6 +44,7 @@ retry:
 		ptr = buffer;
 		rs = BUFFER_SIZE;
 		rc = 0;
+		i = 0;
 		do {
 			rs -= rc;
 			if(rs <= 0) {
@@ -53,11 +57,19 @@ retry:
 			// Read until theres nothing left
 			rc = read(c_socket, ptr, rs);
 			if(rc == -1) {
-				if(errno == EAGAIN)
-					break;
-				perror("Read error");
-				goto retry;
+				++i; // Count down for 100 usec max read wait b/w valid read
+				if(i < 3) { 
+					if(errno == EAGAIN)
+						break;
+					else {
+						perror("Read error");
+						goto fof;
+					}
+				}
+				usleep(50); // wait for more information, 50 usec
 			}
+			else
+				i = 0;
 			ptr += rc;
 		} while(rc != 0);
 		++ptr;
@@ -68,13 +80,15 @@ retry:
 		// Figure out what we should look up
 		{
 			ptr = strtok_r(buffer, del, &tok);
-			if(tok == NULL) // there was no message we can work with
-				goto close;
+			if(!ptr) // there was no message we can work with
+				goto fof;
 			// We just want the GET and the path
 			if(strncmp(ptr, "GET", 3))
-				goto close;
+				goto fof;
 			
 			ptr = strtok_r(NULL, del, &tok);
+			if(!ptr)
+				goto fof;
 			if(ptr[0] != '/')
 				goto fof;
 
@@ -83,7 +97,11 @@ retry:
 		}
 
 
-		file = getval_n_l(file_list,ptr,0);
+		++ptr;
+		sz = strlen(ptr);
+		if(!sz)
+			goto fof;
+		file = getval_n_l(file_list,ptr,sz);
 		if(!file)
 			goto fof;
 		ptr = (char * restrict) file->data;
@@ -99,6 +117,7 @@ retry:
 		}
 		ptr = endtrans;
 		rc = write( c_socket, &ptr, 2);
+		goto close;
 
 fof:
 		
