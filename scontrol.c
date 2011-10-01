@@ -3,6 +3,8 @@
 static struct list_t * file_list;
 static struct list_t request_list;
 static struct st_args_t * args;
+static int s_socket, s_port;
+static struct sockaddr_in s_addr;
 
 static int init_check = 0;
 int s_addr_sz = sizeof(struct sockaddr_in); // !!
@@ -43,7 +45,12 @@ void * sc_manager(void* args) {
 
   printf("listening\n");
   while(1) {
-    c_socket = accept( s_socket, NULL, (socklen_t *) s_addr_sz);
+    c_socket = accept( s_socket, NULL, (socklen_t *) &s_addr_sz);
+		if(c_socket == -1) {
+			perror("accept error");
+			close(c_socket);
+			continue;
+		}
 #ifndef NDEBUG // We want the delegation to be as fast as possible
     printf("new connection\t%d\n", c_socket);
 #endif

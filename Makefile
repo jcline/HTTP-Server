@@ -1,12 +1,12 @@
 CC			= gcc
-CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${DEBUGFLAG} -DDEBUG
-#CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${OPTFLAG} -DNDEBUG
+#CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${DEBUGFLAG} -DDEBUG
+CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O2
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
 LFLAGS		= -lpthread
 
-SRC = \
+SSRC = \
 			list.c \
 			sthreads.c \
 			rthreads.c \
@@ -15,11 +15,25 @@ SRC = \
 			log.c \
 			main.c
 
+CSRC= \
+			list.c \
+			cthreads.c \
+			rthreads.c \
+			ccontrol.c \
+			rcontrol.c \
+			client.c
 
-OBJS = $(SRC:.c=.o)
 
-webserver: $(OBJS)
-	$(LINKER) $(LFLAGS) $(OBJS) -o $@
+SOBJS = $(SSRC:.c=.o)
+COBJS = $(CSRC:.c=.o)
+
+all: webserver client
+
+webserver: $(SOBJS)
+	$(LINKER) $(LFLAGS) $(SOBJS) -o $@
+
+client: $(COBJS)
+	$(LINKER) $(LFLAGS) $(COBJS) -o $@
 
 clean:
-	rm $(OBJS) webserver
+	rm $(SOBJS) $(COBJS) client webserver

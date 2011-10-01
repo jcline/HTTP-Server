@@ -13,8 +13,10 @@
 #include <time.h>
 
 // System includes
+#include <arpa/inet.h>
 #include <dirent.h>
 #include <fcntl.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <sys/errno.h>
@@ -27,6 +29,8 @@
 // Data structures
 #include "list.h"
 //   Threading
+#include "cthreads.h"
+#include "ccontrol.h"
 #include "sthreads.h"
 #include "scontrol.h"
 #include "rthreads.h"

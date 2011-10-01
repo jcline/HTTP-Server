@@ -1,14 +1,17 @@
 #include "include.h"
 
 size_t MAX_READ_THREADS = 1;
-size_t MAX_SERVE_THREADS = 10;
+size_t MAX_SERVE_THREADS = 0;
 
 int main(int argc, char** argv) {
-	// Start logging for error messages etc
-	start_logging();
+	if( argc < 3 ) {
+		fprintf(stderr, "Not enough arguments!\n");
+		exit(1);
+	}
 
-
-	stop_logging();
+	int port;
+	port = atoi(argv[1]);
+	MAX_SERVE_THREADS = atoi(argv[2]);
 
 	char* restrict root_dir = malloc(sizeof(char)*5);
 	strcpy(root_dir,".");
@@ -18,7 +21,7 @@ int main(int argc, char** argv) {
 	rc_readdir(root_dir);
 	printf("reading\n");
 
-	sc_start(file_list, 8080);
+	sc_start(file_list, port);
 
 	sc_stop();
 	rc_stop();

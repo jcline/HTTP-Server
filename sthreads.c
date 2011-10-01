@@ -2,9 +2,16 @@
 
 extern int errno;
 
-static char* fourzerofour = "404: File not Found\n\r";
+static const char * const fourzerozero= "HTTP/1.0 400 Bad Request\x0d\x0a";
+static const char * const fourzerofour= "HTTP/1.0 404 Not Found\x0d\x0a";
+static const char * const fivezeroone= "HTTP/1.0 501 Not Implemented\x0d\x0a";
+static const char * const twozerozero= "HTTP/1.0 200 OK\nContent-Type: text/plain\x0d\x0a";
 
 void * st_thread(void* args) {
+	size_t len400 = strlen(fourzerozero);
+	size_t len404 = strlen(fourzerofour);
+	size_t len501 = strlen(fivezeroone);
+	size_t len200 = strlen(twozerozero);
 	size_t BUFFER_SIZE = 500;
 	assert(args);
 
@@ -19,32 +26,23 @@ void * st_thread(void* args) {
 	struct node_t* restrict val, * restrict file;
 	ssize_t i = 0, sz = 0;
 	int c_socket, rc, rs, flags = 0;
-	char* ptr = NULL, *endtrans = "\n\r\0",
+	char* ptr = NULL, *endtrans = "\n\r\x0d\x0a",
 		*buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 		*tok = NULL, *del = " ";
 	for(i = 0; i < BUFFER_SIZE; ++i) {
 		buffer[i] = '\0';
 	}
 	while(1) { 
-retry:
 		val = pop_front_n(request_list);
-
-		if(params->done)
-			return NULL;
 
 		if(!val)
 			continue;
 
 		c_socket = val->misc;
 
-    if (-1 == (flags = fcntl(c_socket, F_GETFL, 0)))
-        flags = 0;
-    fcntl(c_socket, F_SETFL, flags | O_NONBLOCK);
-
 		ptr = buffer;
 		rs = BUFFER_SIZE;
 		rc = 0;
-		i = 0;
 		do {
 			rs -= rc;
 			if(rs <= 0) {
@@ -57,34 +55,27 @@ retry:
 			// Read until theres nothing left
 			rc = read(c_socket, ptr, rs);
 			if(rc == -1) {
-				++i; // Count down for 100 usec max read wait b/w valid read
-				if(i < 3) { 
-					if(errno == EAGAIN)
-						break;
-					else {
-						perror("Read error");
-						goto fof;
-					}
-				}
-				usleep(50); // wait for more information, 50 usec
+				perror("Read error");
+				goto fof;
 			}
-			else
-				i = 0;
 			ptr += rc;
+			for(i = 0; i < ptr - buffer; ++i) {
+				if(buffer[i] == '\x0d' || buffer[i] == '\x0a')
+					goto rdone;
+			}
 		} while(rc != 0);
+rdone:
 		++ptr;
 		ptr = '\0';
-
-    fcntl(c_socket, F_SETFL, flags);
 
 		// Figure out what we should look up
 		{
 			ptr = strtok_r(buffer, del, &tok);
 			if(!ptr) // there was no message we can work with
-				goto fof;
+				goto fo0;
 			// We just want the GET and the path
 			if(strncmp(ptr, "GET", 3))
-				goto fof;
+				goto foo;
 			
 			ptr = strtok_r(NULL, del, &tok);
 			if(!ptr)
@@ -96,33 +87,50 @@ retry:
 			rs = strtok_r(NULL, del, &tok) - ptr;
 		}
 
-
 		++ptr;
 		sz = strlen(ptr);
 		if(!sz)
 			goto fof;
-		file = getval_n_l(file_list,ptr,sz);
+		++sz;
+
+		file = getval_n_l(file_list, ptr, sz);
 		if(!file)
 			goto fof;
+
 		ptr = (char * restrict) file->data;
 		sz = file->size;
+
+		rc = write( c_socket, twozerozero, len200); 
+		if( rc < 0 ) {
+			perror("Could not write");
+			goto close;
+		}
+
 		for(i = 0; i < sz; ) {
 		  rc = write( c_socket, &ptr[i], sz-i); 
-		  write( 0, &ptr[i], sz-i); 
 		  if( rc < 0 ) {
 		    perror("Could not write");
 				goto close;
 		  }
 		  i += rc;
 		}
-		ptr = endtrans;
-		rc = write( c_socket, &ptr, 2);
+
+		rc = write( c_socket, endtrans, 4);
+		if( rc < 0 )
+			perror("Could not write");
+		goto close;
+
+fo0:
+		write(c_socket, fourzerozero, len400);
 		goto close;
 
 fof:
-		
-		write(c_socket, fourzerofour, strlen(fourzerofour));
+		write(c_socket, fourzerofour, len404);
+		goto close;
 
+foo:
+		write(c_socket, fivezeroone, len501);
+		goto close;
 
 close:
 		free(val->data);
@@ -130,7 +138,6 @@ close:
 
 		if( close(c_socket) == -1 ) {
 		  perror("Could not close c_socket");
-			goto retry;
 		}
 
 	}
