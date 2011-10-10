@@ -58,8 +58,6 @@ void * ct_thread(void* args) {
 	s_addr.sin_port=htons(s_port);
 	s_addr.sin_family=AF_INET;
 
-	s_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
 	srand48_r(pthread_self(), &state);
 
 	gettimeofday(&fs1, NULL);
@@ -71,17 +69,17 @@ void * ct_thread(void* args) {
 		r *= 10000;
 		usleep(r);
 
+		lrand48_r(&state, &r);
+		r = (int)(r % num_files);
+
+		file = getval_n(file_list, r);
+
 		gettimeofday(&rs1, NULL);
 		if(connect(s_socket, (struct sockaddr *) &s_addr, sizeof(s_addr)) == -1) {
 			perror("Could not connect to server");
 			close(s_socket);
 			continue;
 		}
-
-		lrand48_r(&state, &r);
-		r = (int)(r % num_files);
-
-		file = getval_n(file_list, r);
 
 		write(s_socket, get, lenget);
 		ptr = (char *) file->data;
