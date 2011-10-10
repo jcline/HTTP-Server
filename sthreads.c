@@ -145,9 +145,7 @@ rdone:
 		rc = write( c_socket, endtrans, 4);
 #ifndef NDEBUG 
 			printf("end: %d ", rc);
-#endif
 		if( rc < 0 )
-#ifndef NDEBUG
 			fprintf(stderr,"Could not write: %d, %s\n", errno, strerror(errno));
 #endif
 		goto close;
