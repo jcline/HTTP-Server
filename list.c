@@ -13,27 +13,32 @@ void* pop_back(struct list_t* restrict list) {
 
 struct node_t* pop_back_n(struct list_t* restrict list) {
 	assert(list);
-	pthread_mutex_lock(&(list->global_lock));
+	pthread_mutex_lock(&(list->tail_lock));
 
 	while(!list->size) {
-		pthread_cond_wait(&(list->work), &(list->global_lock));
+		pthread_cond_wait(&(list->work), &(list->tail_lock));
 	}
 
 	struct node_t *restrict ret = list->tail;
 
-	if(list->size > 1) {
-		list->tail = list->tail->prev;
-		list->tail->next = NULL;
-		--list->size;
-	}
-	else if(list->size) {
-		list->tail = NULL;
-		list->head = NULL;
-		list->size = 0;
+	switch(list->size) {
+		case 0:
+			break;
+		case 1:
+			list->tail = NULL;
+			pthread_mutex_lock(&(list->head_lock));
+			list->head = NULL;
+			pthread_mutex_unlock(&(list->head_lock));
+			--list->size;
+			break;
+		default:
+			list->tail = list->tail->prev;
+			list->tail->next = NULL;
+			--list->size;
+			break;
 	}
 
-	assert(list->tail != ret);
-	pthread_mutex_unlock(&(list->global_lock));
+	pthread_mutex_unlock(&(list->tail_lock));
 	return ret;
 }
 
@@ -50,27 +55,32 @@ void* pop_front(struct list_t* restrict list) {
 
 struct node_t* pop_front_n(struct list_t* restrict list) {
 	assert(list);
-	pthread_mutex_lock(&(list->global_lock));
+	pthread_mutex_lock(&(list->head_lock));
 
 	while(!list->size) {
-		pthread_cond_wait(&(list->work), &(list->global_lock));
+		pthread_cond_wait(&(list->work), &(list->head_lock));
 	}
 
 	struct node_t *restrict ret = list->head;
 
-	if(list->size > 1) {
-		list->head = list->head->next;
-		list->head->prev = NULL;
-		--list->size;
-	}
-	else if(list->size) {
-		list->tail = NULL;
-		list->head = NULL;
-		list->size = 0;
+	switch(list->size) {
+		case 0:
+			break;
+		case 1:
+			pthread_mutex_lock(&(list->tail_lock));
+			list->tail = NULL;
+			pthread_mutex_unlock(&(list->tail_lock));
+			list->head = NULL;
+			--list->size;
+			break;
+		default:
+			list->head = list->head->next;
+			list->head->prev = NULL;
+			--list->size;
+			break;
 	}
 
-	assert(list->head != ret);
-	pthread_mutex_unlock(&(list->global_lock));
+	pthread_mutex_unlock(&(list->head_lock));
 	return ret;
 }
 
@@ -97,7 +107,7 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s,
 	x->next = NULL;
 
 	// Take the lock as late as possible
-	pthread_mutex_lock(&(list->global_lock));
+	pthread_mutex_lock(&(list->tail_lock));
 
 	x->prev = list->tail;
 
@@ -106,21 +116,20 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s,
 
 	list->tail = x;
 
-	if(!list->size)
+	if(!list->size) {
+		pthread_mutex_lock(&(list->head_lock));
 		list->head = list->tail;
-
-	++list->size;
+		pthread_mutex_unlock(&(list->head_lock));
+	}
 
 	assert(list->head);
 	assert(list->tail);
 
-	// We want to make sure all the threads are awake when there's lot's of work to do
-	if(list->size > 1)
-		pthread_cond_broadcast(&(list->work));
-	else
-		pthread_cond_signal(&(list->work));
+	++list->size;
 
-	pthread_mutex_unlock(&(list->global_lock));
+	pthread_mutex_unlock(&(list->tail_lock));
+	pthread_cond_signal(&(list->work));
+
 }
 
 void push_front(struct list_t* restrict list, void* restrict a, size_t s,
@@ -145,7 +154,7 @@ void push_front(struct list_t* restrict list, void* restrict a, size_t s,
 	x->prev = NULL;
 
 	// Take the lock as late as possible
-	pthread_mutex_lock(&(list->global_lock));
+	pthread_mutex_lock(&(list->head_lock));
 
 	x->next = list->head;
 
@@ -153,20 +162,20 @@ void push_front(struct list_t* restrict list, void* restrict a, size_t s,
 		list->head->prev = x;
 
 	list->head = x;
-	if(!list->size)
+	if(!list->size) {
+		pthread_mutex_lock(&(list->tail_lock));
 		list->tail = list->head;
-
-	++list->size;
-
-	if(list->size > 1)
-		pthread_cond_broadcast(&(list->work));
-	else
-		pthread_cond_signal(&(list->work));
+		pthread_mutex_unlock(&(list->tail_lock));
+	}
 
 	assert(list->head);
 	assert(list->tail);
 
-	pthread_mutex_unlock(&(list->global_lock));
+	++list->size;
+
+	pthread_mutex_unlock(&(list->head_lock));
+	pthread_cond_signal(&(list->work));
+
 }
 
 void destroy(struct list_t* restrict list) {
@@ -196,7 +205,8 @@ void init(struct list_t* restrict list) {
 	list->size = 0;
 	list->cache_size = 10;
 	list->cache = (void ** restrict) malloc(sizeof(void*) * list->cache_size);
-	pthread_mutex_init(&(list->global_lock), NULL);
+	pthread_mutex_init(&(list->head_lock), NULL);
+	pthread_mutex_init(&(list->tail_lock), NULL);
 	pthread_cond_init(&(list->work), NULL);
 }
 
@@ -271,7 +281,7 @@ void* getval(struct list_t* restrict list, size_t i) {
 	return ret;
 }
 
-void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s) {
+/*void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s) {
 	assert(list);
 	pthread_mutex_lock(&(list->global_lock));
 	assert(list->head);
@@ -290,4 +300,4 @@ void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s)
 
 	pthread_mutex_unlock(&(list->global_lock));
 }
-
+*/

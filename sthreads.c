@@ -65,7 +65,9 @@ void * st_thread(void* args) {
 			printf("read: %d ", rc);
 #endif
 			if(rc == -1) {
-				perror("Read error");
+#ifndef NDEBUG
+				fprintf(stderr,"Read error: %d, %s\n", errno, strerror(errno));
+#endif
 				goto fof;
 			}
 			ptr += rc;
@@ -117,7 +119,9 @@ rdone:
 
 		rc = write( c_socket, twozerozero, len200); 
 		if( rc < 0 ) {
-			perror("Could not write");
+#ifndef NDEBUG
+			fprintf(stderr,"Could not write: %d, %s\n", errno, strerror(errno));
+#endif
 			goto close;
 		}
 #ifndef NDEBUG 
@@ -127,7 +131,9 @@ rdone:
 		for(i = 0; i < sz; ) {
 		  rc = write( c_socket, &ptr[i], sz-i); 
 		  if( rc < 0 ) {
-		    perror("Could not write");
+#ifndef NDEBUG
+		    fprintf(stderr,"Could not write: %d, %s\n", errno, strerror(errno));
+#endif
 				goto close;
 		  }
 #ifndef NDEBUG 
@@ -141,7 +147,9 @@ rdone:
 			printf("end: %d ", rc);
 #endif
 		if( rc < 0 )
-			perror("Could not write");
+#ifndef NDEBUG
+			fprintf(stderr,"Could not write: %d, %s\n", errno, strerror(errno));
+#endif
 		goto close;
 
 fo0:
@@ -173,7 +181,9 @@ close:
 		free(val);
 
 		if( close(c_socket) == -1 ) {
-		  perror("Could not close c_socket");
+#ifndef NDEBUG
+		  fprintf(stderr,"Could not close c_socket: %d, %s\n", errno, strerror(errno));
+#endif
 		}
 
 	}

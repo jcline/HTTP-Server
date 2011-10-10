@@ -21,7 +21,7 @@ struct list_t {
 	struct node_t *head, *tail;
 	size_t size, cache_size;
 	void* restrict * cache;
-	pthread_mutex_t global_lock;
+	pthread_mutex_t head_lock, tail_lock;
 	pthread_cond_t work;
 };
 
@@ -42,7 +42,7 @@ void init(struct list_t* restrict list);
 struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, size_t i);
 struct node_t* getval_n(struct list_t* restrict list, size_t i);
 void* getval(struct list_t* restrict list, size_t i);
-void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s);
+//void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s);
 
 
 #endif

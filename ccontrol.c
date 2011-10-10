@@ -87,6 +87,8 @@ void cc_stop() {
 					 ft = statarr[i].ftimes[j],
 					 dt = statarr[i].dtimes[j];
 
+			printf("%Lu\t%Lu\t%Lu\n", rt, ft, dt);
+
 			rtime += rt;
 			ftime += ft;
 			dtime += dt;
