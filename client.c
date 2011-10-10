@@ -49,5 +49,6 @@ int main(int argc, char** argv) {
 	cc_start(&file_list, trials, port, host);
 
 	cc_stop();
+	destroy(&file_list);
 	return 0;
 }

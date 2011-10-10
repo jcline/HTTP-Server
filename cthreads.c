@@ -156,6 +156,7 @@ rdone:
 	stats->ttime += (fs2.tv_usec - fs1.tv_usec);
 
 	free(args);
+	free(buffer);
 
 
 	return NULL;

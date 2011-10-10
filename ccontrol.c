@@ -100,7 +100,12 @@ void cc_stop() {
 			dtimemax = (dt > dtimemax) ? dt : dtimemax;
 		}
 
+		free(statarr[i].rtimes);
+		free(statarr[i].ftimes);
+		free(statarr[i].dtimes);
 	}
+	free(statarr);
+	
 	double ttimeavg = ttime/MAX_CLIENT_THREADS;
 	double rtimeavg = rtime/(MAX_CLIENT_THREADS*numr);
 	double ftimeavg = ftime/(MAX_CLIENT_THREADS*numr);
