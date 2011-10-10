@@ -48,11 +48,10 @@ void * sc_manager(void* args) {
     c_socket = accept( s_socket, NULL, (socklen_t *) &s_addr_sz);
 		if(c_socket == -1) {
 			perror("accept error");
-			close(c_socket);
 			continue;
 		}
 #ifndef NDEBUG // We want the delegation to be as fast as possible
-    printf("new connection\t%d\n", c_socket);
+    //printf("new connection\t%d\n", c_socket);
 #endif
 
 		push_back(&request_list, buffer, 1, NULL, c_socket);
@@ -100,6 +99,7 @@ void sc_stop() {
 	for(i = 0; i < MAX_SERVE_THREADS; ++i) {
 		pthread_join(*(sthreads[i]), NULL);
 	}
+	printf("You should never see this line.\n");
 
 	free(args);
 

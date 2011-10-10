@@ -25,7 +25,7 @@ void * st_thread(void* args) {
 
 	struct node_t* restrict val, * restrict file;
 	ssize_t i = 0, sz = 0;
-	int c_socket, rc, rs, flags = 0;
+	int c_socket, rc, rs;
 	char* ptr = NULL, *endtrans = "\n\r\x0d\x0a",
 		*buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 		*tok = NULL, *del = " ";
@@ -40,6 +40,10 @@ void * st_thread(void* args) {
 
 		c_socket = val->misc;
 
+#ifndef NDEBUG 
+		printf("%d: ", c_socket);
+#endif
+
 		ptr = buffer;
 		rs = BUFFER_SIZE;
 		rc = 0;
@@ -50,10 +54,16 @@ void * st_thread(void* args) {
 				ptr = (char *) realloc(buffer, rs);
 				ptr += BUFFER_SIZE;
 				BUFFER_SIZE = rs;
+#ifndef NDEBUG 
+				printf("buffer resize: %lu ", BUFFER_SIZE);
+#endif
 			}
 
 			// Read until theres nothing left
 			rc = read(c_socket, ptr, rs);
+#ifndef NDEBUG 
+			printf("read: %d ", rc);
+#endif
 			if(rc == -1) {
 				perror("Read error");
 				goto fof;
@@ -86,7 +96,11 @@ rdone:
 			// we want to find the length of the path
 			rs = strtok_r(NULL, del, &tok) - ptr;
 		}
+#ifndef NDEBUG 
+			printf("file: %s ", ptr);
+#endif
 
+		// Drop the first character, should always be '/'
 		++ptr;
 		sz = strlen(ptr);
 		if(!sz)
@@ -98,6 +112,7 @@ rdone:
 			goto fof;
 
 		ptr = (char * restrict) file->data;
+		assert(ptr);
 		sz = file->size;
 
 		rc = write( c_socket, twozerozero, len200); 
@@ -105,6 +120,9 @@ rdone:
 			perror("Could not write");
 			goto close;
 		}
+#ifndef NDEBUG 
+		printf("header: %d ", rc);
+#endif
 
 		for(i = 0; i < sz; ) {
 		  rc = write( c_socket, &ptr[i], sz-i); 
@@ -112,27 +130,45 @@ rdone:
 		    perror("Could not write");
 				goto close;
 		  }
+#ifndef NDEBUG 
+			printf("data: %d ", rc);
+#endif
 		  i += rc;
 		}
 
 		rc = write( c_socket, endtrans, 4);
+#ifndef NDEBUG 
+			printf("end: %d ", rc);
+#endif
 		if( rc < 0 )
 			perror("Could not write");
 		goto close;
 
 fo0:
 		write(c_socket, fourzerozero, len400);
+#ifndef NDEBUG 
+			printf("400: %d ", rc);
+#endif
 		goto close;
 
 fof:
 		write(c_socket, fourzerofour, len404);
+#ifndef NDEBUG 
+			printf("404: %d ", rc);
+#endif
 		goto close;
 
 foo:
 		write(c_socket, fivezeroone, len501);
+#ifndef NDEBUG 
+			printf("501: %d ", rc);
+#endif
 		goto close;
 
 close:
+#ifndef NDEBUG 
+			printf("\n");
+#endif
 		free(val->data);
 		free(val);
 

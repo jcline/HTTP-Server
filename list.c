@@ -218,18 +218,15 @@ struct node_t* getnode(struct list_t* restrict list, size_t i) {
 
 struct node_t* getval_n(struct list_t* restrict list, size_t i) {
 	assert(list);
-	pthread_mutex_lock(&(list->global_lock));
 	assert(list->head);
 	assert(i < list->size);
 
 	if(i >= list->size) {
-		pthread_mutex_unlock(&(list->global_lock));
 		return NULL;
 	}
 
 	struct node_t *ptr = getnode(list,i);
 
-	pthread_mutex_unlock(&(list->global_lock));
 	return ptr;
 }
 
@@ -237,7 +234,6 @@ struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, s
 	assert(list);
 	assert(label);
 	assert(i);
-	pthread_mutex_lock(&(list->global_lock));
 	assert(list->head);
 
 	struct node_t *it;
@@ -245,7 +241,6 @@ struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, s
 	for(it = list->head; it != NULL; ++j) {
 		if( !strncmp(it->label, label, i) )  {
 			if(it->data != NULL) {
-				pthread_mutex_unlock(&(list->global_lock));
 				return it;
 			}
 			else
@@ -254,7 +249,6 @@ struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, s
 		it = it->next;
 	}
 
-	pthread_mutex_unlock(&(list->global_lock));
 	return NULL;
 }
 
@@ -262,12 +256,10 @@ struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, s
 // this is largely useless
 void* getval(struct list_t* restrict list, size_t i) {
 	assert(list);
-	pthread_mutex_lock(&(list->global_lock));
 	assert(list->head);
 	assert(i < list->size);
 
 	if(i >= list->size) {
-		pthread_mutex_unlock(&(list->global_lock));
 		return NULL;
 	}
 
@@ -276,7 +268,6 @@ void* getval(struct list_t* restrict list, size_t i) {
 		return NULL;
 	void* ret = ptr->data;
 
-	pthread_mutex_unlock(&(list->global_lock));
 	return ret;
 }
 

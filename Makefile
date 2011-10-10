@@ -1,6 +1,6 @@
 CC			= gcc
-#CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${DEBUGFLAG} -DDEBUG
-CFLAGS		= -Wall -std=gnu99 -fstrict-aliasing ${OPTFLAG} -DNDEBUG
+CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
+#CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O2
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
@@ -23,11 +23,20 @@ CSRC= \
 			rcontrol.c \
 			client.c
 
+PSRC = \
+			list.c \
+			sthreads.c \
+			scontrol.c \
+			rcontrol.c \
+			log.c \
+			proxy.c
+
 
 SOBJS = $(SSRC:.c=.o)
 COBJS = $(CSRC:.c=.o)
+POBJS = $(PSRC:.c=.o)
 
-all: webserver client
+all: webserver client proxy
 
 webserver: $(SOBJS)
 	$(LINKER) $(LFLAGS) $(SOBJS) -o $@
@@ -35,5 +44,8 @@ webserver: $(SOBJS)
 client: $(COBJS)
 	$(LINKER) $(LFLAGS) $(COBJS) -o $@
 
+proxy: $(POBJS)
+	$(LINKER) $(LFLAGS) $(POBJS) -o $@
+
 clean:
-	rm $(SOBJS) $(COBJS) client webserver
+	rm $(SOBJS) $(COBJS) $(POBJS) client webserver proxy

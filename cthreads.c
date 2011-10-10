@@ -10,14 +10,10 @@ static const char * const restrict htv = " HTTP/1.0\x0d\x0a";
 
 void * ct_thread(void* args) {
 	char * buffer, * ptr;
-	FILE * fp;
-	int c, i, j, done, flags, num_files, s_port, s_socket, rc;
+	int c, i, j, done, num_files, s_port, s_socket, rc;
 	long int r, h_addr;
 
 	size_t sz;
-	size_t len404 = strlen(fourzerofour);
-	size_t len501 = strlen(fivezeroone);
-	size_t len200 = strlen(twozerozero);
 	size_t lenget = strlen(get);
 	size_t lenhtv = strlen(htv);
 	size_t BUFFER_SIZE = 5000;
@@ -46,6 +42,15 @@ void * ct_thread(void* args) {
 	stats->rtimes = (long long int *) malloc(sizeof(long long int) * done);
 	stats->ftimes = (long long int *) malloc(sizeof(long long int) * done);
 	stats->dtimes = (long long int *) malloc(sizeof(long long int) * done);
+	assert(stats->rtimes);
+	assert(stats->ftimes);
+	assert(stats->dtimes);
+
+	for(i = 0; i < done; ++i) {
+		stats->rtimes[i] = 0;
+		stats->ftimes[i] = 0;
+		stats->dtimes[i] = 0;
+	}
 
 	memcpy(&h_addr, s_info->h_addr, s_info->h_length);
 
