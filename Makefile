@@ -1,12 +1,13 @@
 CC			= gcc
-CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
-#CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
+#CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
+CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O2
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
 LFLAGS		= -lpthread
 
 SSRC = \
+			hash.c \
 			list.c \
 			sthreads.c \
 			rthreads.c \
@@ -16,6 +17,7 @@ SSRC = \
 			main.c
 
 CSRC= \
+			hash.c \
 			list.c \
 			cthreads.c \
 			rthreads.c \
@@ -24,6 +26,7 @@ CSRC= \
 			client.c
 
 PSRC = \
+			hash.c \
 			list.c \
 			sthreads.c \
 			scontrol.c \

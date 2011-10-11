@@ -178,6 +178,86 @@ void push_front(struct list_t* restrict list, void* restrict a, size_t s,
 
 }
 
+void build_cache(struct list_t* restrict list) {
+	assert(list);
+
+	size_t size = list->cache_size = list->size*2;
+	list->cache = (struct cache_t * restrict) malloc(sizeof(struct cache_t) * size);
+
+	size_t i;
+#ifndef NDEBUG
+	size_t t_cost = 0;
+#endif
+	struct cache_t * restrict cache = list->cache,
+								 * restrict loc = cache;
+	for(i = 0; i < size; ++i) 
+		cache[i].node = NULL;
+
+	struct node_t *it;
+	for(it = list->head; it != NULL; ) {
+		size_t h = hash( (unsigned char *)it->label ) % size;
+
+		loc = &cache[h];
+
+		//printf("%d: %s\n", h, it->label);
+		
+		if(!loc->node) {
+			loc->node = it;
+		}
+		else {
+#ifndef NDEBUG
+			printf("Conflict! %lu ", h);
+#endif
+			for(i = h+1; i < size; ++i) {
+				++loc;
+				if(!loc->node) {
+					loc->node = it;
+					break;
+				}
+			}
+			if(i == size) {
+				for(i = 0; i < h; ++i) {
+					++loc;
+					if(!loc->node) {
+						loc->node = it;
+						break;
+					}
+				}
+
+			}
+#ifndef NDEBUG
+			printf("%lu, cost: %lu\n", i, (h < i) ? i - h : h - i);
+			t_cost += (h < i) ? i - h : h - i;
+#endif
+		}
+
+		it = it->next;
+	}
+#ifndef NDEBUG
+	printf ("t_cost: %lu Max get_node cost: %lu\n", t_cost, list->size);
+#endif
+
+	list->cache_init = 1;
+}
+
+struct node_t* cache_lookup(struct list_t* restrict list, char * restrict key) {
+
+	size_t size = list->cache_size;
+	struct cache_t * restrict cache = list->cache;
+	size_t h = hash( (unsigned char *)key ) % size;
+
+	while( 
+			h < size &&
+			cache[h].node &&
+			strcmp( cache[h].node->label, key )
+			)
+		++h;
+	if(h < size)
+		return cache[h].node;
+	return NULL;
+
+}
+
 void destroy(struct list_t* restrict list) {
 	assert(list);
 	assert(list->head);
@@ -195,7 +275,8 @@ void destroy(struct list_t* restrict list) {
 	if(tmp)
 		free(tmp);
 
-	free((void*)list->cache);
+	if(list->cache_init)
+		free((void*)list->cache);
 
 }
 
@@ -203,8 +284,7 @@ void init(struct list_t* restrict list) {
 	list->head = NULL;
 	list->tail = NULL;
 	list->size = 0;
-	list->cache_size = 10;
-	list->cache = (void ** restrict) malloc(sizeof(void*) * list->cache_size);
+	list->cache_init = 0;
 	pthread_mutex_init(&(list->head_lock), NULL);
 	pthread_mutex_init(&(list->tail_lock), NULL);
 	pthread_cond_init(&(list->work), NULL);
@@ -245,6 +325,9 @@ struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, s
 	assert(label);
 	assert(i);
 	assert(list->head);
+
+	if(list->cache_init)
+		return cache_lookup(list, label);
 
 	struct node_t *it;
 	size_t j = 0;

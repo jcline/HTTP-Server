@@ -10,7 +10,7 @@ static const char * const restrict htv = " HTTP/1.0\x0d\x0a";
 
 void * ct_thread(void* args) {
 	char * buffer, * ptr;
-	int c, i, j, done, num_files, s_port, s_socket, rc;
+	int c, i, j, k, done, num_files, s_port, s_socket, rc;
 	long int r, h_addr;
 
 	size_t sz;
@@ -89,6 +89,7 @@ void * ct_thread(void* args) {
 
 		c = 0;
 		j = 0;
+		k = 0;
 		ptr = buffer;
 		sz = BUFFER_SIZE;
 		gettimeofday(&ds, NULL);
@@ -98,21 +99,30 @@ void * ct_thread(void* args) {
 				gettimeofday(&rs2, NULL);
 			c += rc;
 			if(rc == -1) {
+				perror("");
 				break;
 			}
 			ptr += rc;
 			for(j = 0; j < ptr - buffer; ++j) {
-				if(buffer[j] == '\x0d' || buffer[j] == '\x0a')
-					goto rdone;
+				if(buffer[j] == '\x0d' && buffer[j+1] == '\x0a') {
+					if(k)
+						goto rdone;
+					k = 1;
+				}
 			}
-			if(sz < rc)
-				break;
 			sz -= rc;
-		} while(rc != 0);
+			if(sz < 100) {
+				size_t diff = ptr - buffer;
+				BUFFER_SIZE += 5000;
+				buffer = (char *) realloc(buffer, sizeof(char) * BUFFER_SIZE);
+				ptr = buffer + diff;
+				sz += 5000;
+			}
+		} while(1);
 
 rdone:
+		printf("%d\n", c);
 		gettimeofday(&ts2, NULL);
-		ptr = '\0';
 		if(c > 3) {
 			for(j = 0; j < c; ++j) {
 				if(buffer[j] == ' ') {

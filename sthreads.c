@@ -72,7 +72,7 @@ void * st_thread(void* args) {
 			}
 			ptr += rc;
 			for(i = 0; i < ptr - buffer; ++i) {
-				if(buffer[i] == '\x0d' || buffer[i] == '\x0a')
+				if(buffer[i] == '\x0d' && buffer[i+1] == '\x0a')
 					goto rdone;
 			}
 		} while(rc != 0);

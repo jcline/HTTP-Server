@@ -64,6 +64,10 @@ void rc_readdir(char* restrict dir) {
 	dp = opendir(dir);
 	if(dp) {
 		while( (entries = readdir(dp)) ) {
+			// We don't want . files.
+			if(entries->d_name[0] == '.')
+				continue;
+
 			rc_readfile(entries->d_name);
 			++count;
 		}
@@ -77,6 +81,12 @@ void rc_readdir(char* restrict dir) {
 		fprintf(stderr, "No files in root directory, nothing to do.\n");
 		exit(1);
 	}
+
+	// Wait until all files are read
+	while(file_list.size != count) usleep(1000);
+
+	build_cache(&file_list);
+
 }
 
 void rc_readfile(char* restrict name) {

@@ -17,10 +17,16 @@ struct node_t {
 	int misc;
 };
 
+struct cache_t {
+	struct node_t * node;
+};
+
+
 struct list_t {
 	struct node_t *head, *tail;
 	size_t size, cache_size;
-	void* restrict * cache;
+	struct cache_t* restrict cache;
+	int cache_init;
 	pthread_mutex_t head_lock, tail_lock;
 	pthread_cond_t work;
 };
@@ -36,9 +42,11 @@ void* pop_back(struct list_t* restrict list);
 struct node_t* pop_front_n(struct list_t* restrict list);
 struct node_t* pop_back_n(struct list_t* restrict list);
 
+void build_cache(struct list_t* restrict list);
 void destroy(struct list_t* restrict list);
 void init(struct list_t* restrict list);
 
+struct node_t* cache_lookup(struct list_t* restrict list, char * restrict key);
 struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, size_t i);
 struct node_t* getval_n(struct list_t* restrict list, size_t i);
 void* getval(struct list_t* restrict list, size_t i);

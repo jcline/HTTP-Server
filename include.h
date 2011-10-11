@@ -27,6 +27,7 @@
 
 // Project files
 // Data structures
+#include "hash.h"
 #include "list.h"
 //   Threading
 #include "cthreads.h"

@@ -25,10 +25,6 @@ void *rt_thread(void* args) {
 		if(!val)
 			continue;
 
-		// We don't want . files.
-		if(((char*)val)[0] == '.')
-			continue;
-
 		//printf("%s\n", val);
 
 		fp = fopen((const char* restrict) val, "r");
