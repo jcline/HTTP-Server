@@ -92,6 +92,7 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s,
 	assert(x);
 
 	x->data = (void * restrict) malloc(sizeof(char)*s);
+	assert(x->data);
 	memcpy(x->data, a, s);
 
 	x->size = s;
@@ -119,10 +120,10 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s,
 	if(!list->size) {
 		pthread_mutex_lock(&(list->head_lock));
 		list->head = list->tail;
+		assert(list->head);
 		pthread_mutex_unlock(&(list->head_lock));
 	}
 
-	assert(list->head);
 	assert(list->tail);
 
 	++list->size;
@@ -140,6 +141,7 @@ void push_front(struct list_t* restrict list, void* restrict a, size_t s,
 	assert(x);
 
 	x->data = (void * restrict) malloc(sizeof(char)*s);
+	assert(x->data);
 	memcpy(x->data, a, s);
 
 	x->size = s;
@@ -165,11 +167,11 @@ void push_front(struct list_t* restrict list, void* restrict a, size_t s,
 	if(!list->size) {
 		pthread_mutex_lock(&(list->tail_lock));
 		list->tail = list->head;
+		assert(list->tail);
 		pthread_mutex_unlock(&(list->tail_lock));
 	}
 
 	assert(list->head);
-	assert(list->tail);
 
 	++list->size;
 

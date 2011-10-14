@@ -245,29 +245,28 @@ void cc_stop() {
 			dtmax_unit = "ms";
 	}
 
-	printf("Stats: 200: %ld\t400: %ld\t404: %ld\t501: %ld\n",
+	printf("Stats: 200: %ld\t400: %ld\t404: %ld\t501: %ld\n\n",
 			stats.OK, stats.BAD,
 			stats.FOUND, stats.IMPL );
 	printf("Average time to complete all trials:\t\t\t%f %s\n",
 			ttimeavg, tta_unit);
 	printf("Minimum time to complete a trial:\t\t\t%f %s\n",
 			ttimemin, ttmin_unit);
-	printf("Maximum time to complete a trial:\t\t\t%f %s\n",
+	printf("Maximum time to complete a trial:\t\t\t%f %s\n\n",
 			ttimemax, ttmax_unit);
-
 
 	printf("Average time for the server to respond:\t\t\t%f %s\n",
 			rtimeavg, rta_unit);
 	printf("Minimum time for the server to respond:\t\t\t%f %s\n",
 			rtimemin, rtmin_unit);
-	printf("Maximum time for the server to respond:\t\t\t%f %s\n",
+	printf("Maximum time for the server to respond:\t\t\t%f %s\n\n",
 			rtimemax, rtmax_unit);
 
 	printf("Average time to complete one trial:\t\t\t%f %s\n",
 			ftimeavg, fta_unit);
 	printf("Minimum time to complete one trial:\t\t\t%f %s\n",
 			ftimemin, ftmin_unit);
-	printf("Maximum time to complete one trial:\t\t\t%f %s\n",
+	printf("Maximum time to complete one trial:\t\t\t%f %s\n\n",
 			ftimemax, ftmax_unit);
 
 	printf("Average time to receive all data from the server:\t%f %s\n",

@@ -12,6 +12,7 @@ void * ct_thread(void* args) {
 	char * buffer, * ptr;
 	int c, i, j, k, done, num_files, s_port, s_socket, rc;
 	long int r, h_addr;
+	long long int slept = 0, rb;
 
 	size_t sz;
 	size_t lenget = strlen(get);
@@ -27,10 +28,7 @@ void * ct_thread(void* args) {
 	struct sockaddr_in s_addr;
 	struct timeval rs1, rs2, ts1, ts2, fs1, fs2, ds;
 
-	buffer = (char *) malloc(sizeof(char) * BUFFER_SIZE);
-	for(i = 0; i < BUFFER_SIZE; ++i) {
-		buffer[i] = '\0';
-	}
+	buffer = (char *) calloc(sizeof(char), BUFFER_SIZE);
 
 	done = params->done;
 	file_list = params->file_list;
@@ -68,6 +66,8 @@ void * ct_thread(void* args) {
 		r = (int)(r % 100);
 		r *= 10000;
 		usleep(r);
+		rb = r;
+		slept += rb;
 
 		lrand48_r(&state, &r);
 		r = (int)(r % num_files);
@@ -81,11 +81,11 @@ void * ct_thread(void* args) {
 			continue;
 		}
 
-		write(s_socket, get, lenget);
+		s_data(s_socket, get, lenget);
 		ptr = (char *) file->data;
 		sz = file->size;
-		write(s_socket, ptr, sz);
-		write(s_socket, htv, lenhtv);
+		s_data(s_socket, ptr, sz);
+		s_data(s_socket, htv, lenhtv);
 
 		c = 0;
 		j = 0;
@@ -93,7 +93,7 @@ void * ct_thread(void* args) {
 		ptr = buffer;
 		sz = BUFFER_SIZE;
 		gettimeofday(&ds, NULL);
-		do {
+		/*do {
 			rc = read(s_socket, ptr, sz);
 			if(!c)
 				gettimeofday(&rs2, NULL);
@@ -119,36 +119,35 @@ void * ct_thread(void* args) {
 				sz += 5000;
 			}
 		} while(1);
+		*/
+
+		c = r_data_tv(s_socket, &buffer, &BUFFER_SIZE, "\x0d\x0a", 2, &rs2);
 
 rdone:
-		printf("%d\n", c);
 		gettimeofday(&ts2, NULL);
 		if(c > 3) {
-			for(j = 0; j < c; ++j) {
-				if(buffer[j] == ' ') {
-					++j;
-					break;
-				}
+			ptr = strstr(buffer, "200");
+			if(!ptr) {
+				ptr = strstr(buffer, "401");
+				if(ptr)
+					++stats->BAD;
 			}
-			switch (buffer[j]) {
-				case '2':
-					++stats->OK;
-					break;
-				case '4':
-					if(buffer[j+2] == '0')
-						++stats->BAD;
-					else
-						++stats->FOUND;
-					break;
-				case '5':
+			else
+				++stats->OK;
+
+			if(!ptr) {
+				ptr = strstr(buffer, "404");
+				if(ptr)
+					++stats->FOUND;
+			}
+			if(!ptr) {
+				ptr = strstr(buffer, "501");
+				if(ptr)
 					++stats->IMPL;
-					break;
-				default:
-					break;
 			}
-
-
 		}
+
+		c += r_data_tv(s_socket, &buffer, &BUFFER_SIZE, "\x0d\x0a", 2, &rs2);
 
 		close(s_socket);
 
@@ -156,12 +155,14 @@ rdone:
 		stats->rtimes[i] += (rs2.tv_usec - rs1.tv_usec);
 		stats->ftimes[i] = (ts2.tv_sec - ts1.tv_sec) * 1000 * 1000;
 		stats->ftimes[i] += (ts2.tv_usec - ts1.tv_usec);
+		stats->ftimes[i] -= rb;
 		stats->dtimes[i] = (ts2.tv_sec - ds.tv_sec) * 1000 * 1000;
 		stats->dtimes[i] += (ts2.tv_usec - ds.tv_usec);
 	}
 	gettimeofday(&fs2, NULL);
 	stats->ttime = (fs2.tv_sec - fs1.tv_sec) * 1000 * 1000;
 	stats->ttime += (fs2.tv_usec - fs1.tv_usec);
+	stats->ttime -= slept;
 
 	free(args);
 	free(buffer);

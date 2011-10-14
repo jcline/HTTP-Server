@@ -29,6 +29,8 @@
 // Data structures
 #include "hash.h"
 #include "list.h"
+//   Networking
+#include "net.h"
 //   Threading
 #include "cthreads.h"
 #include "ccontrol.h"

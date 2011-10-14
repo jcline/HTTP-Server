@@ -1,7 +1,7 @@
 CC			= gcc
 #CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
 CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
-OPTFLAG		= -O2
+OPTFLAG		= -O3
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
 LFLAGS		= -lpthread
@@ -9,6 +9,7 @@ LFLAGS		= -lpthread
 SSRC = \
 			hash.c \
 			list.c \
+			net.c \
 			sthreads.c \
 			rthreads.c \
 			scontrol.c \
@@ -19,6 +20,7 @@ SSRC = \
 CSRC= \
 			hash.c \
 			list.c \
+			net.c \
 			cthreads.c \
 			rthreads.c \
 			ccontrol.c \
@@ -28,6 +30,7 @@ CSRC= \
 PSRC = \
 			hash.c \
 			list.c \
+			net.c \
 			sthreads.c \
 			scontrol.c \
 			rcontrol.c \
