@@ -23,5 +23,8 @@ int main(int argc, char** argv) {
 		printf("Running in shared memory mode\n");
 	}
 
+	pc_start(port);
+	pc_stop();
+
 	return 0;
 }

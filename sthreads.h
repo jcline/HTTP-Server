@@ -4,8 +4,7 @@
 #include "include.h"
 
 struct st_args_t {
-	struct list_t * file_list,
-		    * request_list;
+	struct list_t * request_list;
 	int done;
 };
 

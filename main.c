@@ -16,14 +16,12 @@ int main(int argc, char** argv) {
 	char* restrict root_dir = malloc(sizeof(char)*5);
 	strcpy(root_dir,".");
 
-	struct list_t * file_list = rc_startup();
-	printf("started\n");
-	rc_readdir(root_dir);
-	printf("reading\n");
+	struct sigaction sa;
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
 
-	sc_start(file_list, port);
+	sc_start(port);
 
 	sc_stop();
-	rc_stop();
 	return 0;
 }

@@ -7,21 +7,21 @@ static const char * const fourzerofour= "HTTP/1.0 404 Not Found\x0d\x0a";
 static const char * const fivezeroone= "HTTP/1.0 501 Not Implemented\x0d\x0a";
 static const char * const twozerozero= "HTTP/1.0 200 OK\nContent-Type: text/plain\x0d\x0a";
 
-void * st_thread(void* args) {
-	size_t len400 = strlen(fourzerozero);
+void * pt_thread(void* args) {
+/*	size_t len400 = strlen(fourzerozero);
 	size_t len404 = strlen(fourzerofour);
 	size_t len501 = strlen(fivezeroone);
 	size_t len200 = strlen(twozerozero);
 	size_t BUFFER_SIZE = 500;
 	assert(args);
 
-	struct st_args_t * params = (struct st_args_t *) args;
+	struct pt_args_t * params = (struct pt_args_t *) args;
 
 	struct list_t * request_list = params->request_list;
 
 	assert(params->request_list);
 
-	int file = 0, filds[2];
+	int file = 0;
 	struct node_t* restrict val;
 	struct stat statinfo;
 	ssize_t sz = 0;
@@ -30,11 +30,6 @@ void * st_thread(void* args) {
 		*buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 		*tok = NULL, *del = " ";
 	memset(buffer, 0, BUFFER_SIZE);
-
-	if(pipe(filds) < 0) {
-		perror("pipe failed");
-		return 0;
-	}
 
 	while(1) { 
 		val = pop_front_n(request_list);
@@ -89,6 +84,11 @@ void * st_thread(void* args) {
 			goto fof;
 		++sz;
 
+#ifndef NDEBUG 
+		printf("\t%s ", ptr);
+		fflush(stdout);
+#endif
+
 		//file = getval_n_l(file_list, ptr, sz);
 		if((file = open(ptr, O_RDONLY)) == -1) {
 			perror("");
@@ -110,7 +110,7 @@ void * st_thread(void* args) {
 		fflush(stdout);
 #endif
 
-		rc = sp_control( filds, c_socket, file, sz); 
+		rc = sp_control( c_socket, file, sz); 
 		if( rc < 0 ) {
 			goto close;
 		}
@@ -118,7 +118,6 @@ void * st_thread(void* args) {
 		printf("data: %d ", rc);
 		fflush(stdout);
 #endif
-		close(file);
 
 		rc = s_data( c_socket, endtrans, 2);
 #ifndef NDEBUG 
@@ -156,7 +155,7 @@ close:
 		printf("\n");
 		fflush(stdout);
 #endif
-		free(val->data);
+		//free(val->data);
 		free(val);
 
 		if( close(c_socket) == -1 ) {
@@ -170,6 +169,7 @@ close:
 
 	free(buffer);
 
+*/
 	return NULL;
 }
 

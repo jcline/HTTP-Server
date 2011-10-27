@@ -23,13 +23,13 @@ int main(int argc, char** argv) {
 
 	init(&file_list);
 
+	buf[0]='/';
 	dp = opendir(".");
 	if(dp) {
 		while( (entries = readdir(dp)) ) {
 			if(entries->d_name[0] == '.')
 				continue;
-			strcpy(buf, entries->d_name);
-			buf[strlen(entries->d_name)] = '\0';
+			strcpy(&(buf[1]), entries->d_name);
 			push_back(&file_list, buf, strlen(entries->d_name)+1,
 					NULL, 0);
 			++count;

@@ -1,17 +1,17 @@
 #include "include.h"
 
 static struct list_t request_list;
-static struct st_args_t * args;
+static struct pt_args_t * args;
 static int s_socket, s_port;
 static struct sockaddr_in s_addr;
 
 static int init_check = 0;
 int s_addr_sz = sizeof(struct sockaddr_in); // !!
 
-static pthread_t** sthreads;
+static pthread_t** pthreads;
 static pthread_t manager;
 
-void * sc_manager(void* args) {
+void * pc_manager(void* args) {
 
   s_socket = socket(AF_INET,SOCK_STREAM,0);
   if(s_socket == -1) {
@@ -64,37 +64,37 @@ void * sc_manager(void* args) {
   return NULL;
 }
 
-void sc_start(int port) {
+void pc_start(int port) {
   assert(!init_check);
   init_check = 1;
   init(&request_list);
 
   s_port = port;
 
-  args = (struct st_args_t *) malloc(sizeof(struct st_args_t));
+  args = (struct pt_args_t *) malloc(sizeof(struct st_args_t));
   args->request_list = &request_list;
   args->done = 0;
 
-  sthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_SERVE_THREADS);
+  pthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_PROXY_THREADS);
 
   int i;
-  for(i = 0; i < MAX_SERVE_THREADS; ++i) {
-      sthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
-      assert(sthreads[i]);
-      pthread_create(sthreads[i], NULL, st_thread, (void*) args);
+  for(i = 0; i < MAX_PROXY_THREADS; ++i) {
+      pthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
+      assert(pthreads[i]);
+      pthread_create(pthreads[i], NULL, pt_thread, (void*) args);
   }
 
-  pthread_create(&manager, NULL, sc_manager, NULL);
+  pthread_create(&manager, NULL, pc_manager, NULL);
   
 }
 
-void sc_stop() {
+void pc_stop() {
 	assert(init_check);
 	//join
 //	args->done = 1;
 	int i;
-	for(i = 0; i < MAX_SERVE_THREADS; ++i) {
-		pthread_join(*(sthreads[i]), NULL);
+	for(i = 0; i < MAX_PROXY_THREADS; ++i) {
+		pthread_join(*(pthreads[i]), NULL);
 	}
 	printf("You should never see this line.\n");
 
@@ -102,9 +102,9 @@ void sc_stop() {
 
 	destroy(&request_list);
 
-	for(i = 0; i < MAX_SERVE_THREADS; ++i) {
-		free(sthreads[i]);
+	for(i = 0; i < MAX_PROXY_THREADS; ++i) {
+		free(pthreads[i]);
 	}
 
-	free(sthreads);
+	free(pthreads);
 }

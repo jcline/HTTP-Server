@@ -4,7 +4,6 @@ size_t s_data(int fd, const char* buf, size_t size) {
 	size_t chunk = size, r = 0, rc = 0;
 	do {
 		rc = write(fd, buf, chunk);
-		printf("%d-", rc);
 		if(rc < 0) {
 			perror("write failed");
 		}
@@ -14,47 +13,87 @@ size_t s_data(int fd, const char* buf, size_t size) {
 	return r;
 }
 
-size_t r_data_tv(int fd, char** buf, size_t* bs, const char* stop, size_t ss, struct timeval* restrict initial_resp) {
-	size_t chunk = *bs - 1, r = 0, rc = 0, ndone = 1, fi = 1, i, j, k;
+ssize_t sp_control(int fd[2], int out, int in, size_t size) {
+	ssize_t r = 0, rt = 0;
+
+	do {
+		r = sp_data(fd[1], in, size);
+		if(r == -1)
+			break;
+		sp_data(out, fd[0], r);
+		rt += r;
+		size -= r;
+	} while(size);
+
+	return rt;
+}
+
+ssize_t sp_data(int out, int in, size_t size) {
+	ssize_t rc = 0, r = 0;
+	size_t s_s = (size > 16384) ? 16384 : size;
+//ssize_t splice(int in_in, loff_t *off_in, int in_out,
+//loff_t *off_out, size_t len, unsigned int flags);
+	do {
+		rc = splice(in, NULL, out, NULL, s_s, SPLICE_F_MOVE);
+		if(rc == -1) {
+			fprintf(stderr, "%d: %s\n", errno, strerror(errno));
+			return -1;
+			break;
+		}
+		s_s -= rc;
+		size -= rc;
+		if(!s_s && size) {
+			s_s = size;
+		}
+		r += rc;
+	} while(rc != 0 && size);
+
+	return r;
+}
+
+size_t r_data_tv(int fd, char** buf, size_t* bs, const char* stop, size_t ss, size_t count, struct timeval* restrict initial_resp) {
+	size_t chunk = *bs - 1, r = 0, rc = 0, ndone = count, fi = 1, i, j, k = 0, ind=0;
 	char* ptr = *buf;
 	do {
+		ndone = count;
+		//printf("t");
+		//fflush(stdout);
 		rc = read(fd, ptr, chunk);
 		if(rc < 0) {
 			perror("read failed");
 			ndone = 0;
 		}
 		else if(!rc)
-
 			ndone = 0;
+		//printf("%d\n", rc);
+		//fflush(stdout);
+
 		if(fi) {
 			if(initial_resp)
 				gettimeofday(initial_resp, NULL);
 			fi = 0;
 		}
 
-		printf(" %d ", rc);
-		fflush(stdout);
-
 		r += rc;
 		if(rc) {
-			for(i = r-rc; i < r; ++i) {
-				if(buf[i] == stop[0]) {
-					ndone = 0;
-					k = i;
-					++i;
-					for(j = 1; j < ss && i < r; ++j, ++i) {
-						if(buf[i] != stop[j]) {
-							ndone = 1;
-						}
+			for(j = k; j < r; ++j) {
+				k = j;
+				ind = 1;
+				for(i = 0; i < ss; ++i) {
+					//printf("%hhX:%hhX\t", (*buf)[k], stop[i]);
+					if((*buf)[k] != stop[i]) {
+						ind = 0;
+						break;
 					}
-					if(ndone || ( i == r && j != ss))
-						i = k;
+					else
+						++k;
+				}
+				if(ind) {
+					--ndone;
+					break;
 				}
 			}
 		}
-#ifndef NDEBUG
-		//printf("%d\t %d, %d\n", fd, r, ndone);
-#endif
 
 		chunk -= rc;
 		if(ndone && !chunk) {

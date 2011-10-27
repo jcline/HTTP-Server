@@ -5,12 +5,12 @@ extern int errno;
 static const char * const restrict fourzerofour= "HTTP/1.0 404 Not Found\n\r";
 static const char * const restrict fivezeroone= "HTTP/1.0 501 Not Implemented\n\r";
 static const char * const restrict twozerozero= "HTTP/1.0 200 OK\n";
-static const char * const restrict get = "GET /";
+static const char * const restrict get = "GET ";
 static const char * const restrict htv = " HTTP/1.0\x0d\x0a";
 
 void * ct_thread(void* args) {
 	char * buffer, * ptr;
-	int c, i, j, k, done, num_files, s_port, s_socket, rc;
+	int c, i, done, num_files, s_port, s_socket, rc;
 	long int r, h_addr;
 	long long int slept = 0, rb;
 
@@ -81,74 +81,58 @@ void * ct_thread(void* args) {
 			continue;
 		}
 
-		s_data(s_socket, get, lenget);
 		ptr = (char *) file->data;
 		sz = file->size;
-		s_data(s_socket, ptr, sz);
-		s_data(s_socket, htv, lenhtv);
+
+		strcpy(buffer, get);
+		strcpy(buffer+lenget, ptr);
+		strcpy(buffer+lenget+sz, htv);
+
+		c = s_data(s_socket, buffer, lenget+sz+lenhtv);
+#ifndef NDEBUG
+		printf("%d ", c);
+		fflush(stdout);
+#endif
 
 		c = 0;
-		j = 0;
-		k = 0;
-		ptr = buffer;
-		sz = BUFFER_SIZE;
 		gettimeofday(&ds, NULL);
-		/*do {
-			rc = read(s_socket, ptr, sz);
-			if(!c)
-				gettimeofday(&rs2, NULL);
-			c += rc;
-			if(rc == -1) {
-				perror("");
-				break;
-			}
-			ptr += rc;
-			for(j = 0; j < ptr - buffer; ++j) {
-				if(buffer[j] == '\x0d' && buffer[j+1] == '\x0a') {
-					if(k)
-						goto rdone;
-					k = 1;
-				}
-			}
-			sz -= rc;
-			if(sz < 100) {
-				size_t diff = ptr - buffer;
-				BUFFER_SIZE += 5000;
-				buffer = (char *) realloc(buffer, sizeof(char) * BUFFER_SIZE);
-				ptr = buffer + diff;
-				sz += 5000;
-			}
-		} while(1);
-		*/
 
-		c = r_data_tv(s_socket, &buffer, &BUFFER_SIZE, "\x0d\x0a", 2, &rs2);
+		c = r_data_tv(s_socket, &buffer, &BUFFER_SIZE, "\x0d\x0a", 2, 2, &rs2);
+#ifndef NDEBUG
+		printf("%d\n", c);
+		fflush(stdout);
+#endif
 
-rdone:
 		gettimeofday(&ts2, NULL);
 		if(c > 3) {
 			ptr = strstr(buffer, "200");
 			if(!ptr) {
 				ptr = strstr(buffer, "401");
-				if(ptr)
+				if(ptr) {
 					++stats->BAD;
+					goto skip;
+				}
 			}
 			else
 				++stats->OK;
 
 			if(!ptr) {
 				ptr = strstr(buffer, "404");
-				if(ptr)
+				if(ptr) {
 					++stats->FOUND;
+					goto skip;
+				}
 			}
 			if(!ptr) {
 				ptr = strstr(buffer, "501");
-				if(ptr)
+				if(ptr) {
 					++stats->IMPL;
+					goto skip;
+				}
 			}
 		}
 
-		c += r_data_tv(s_socket, &buffer, &BUFFER_SIZE, "\x0d\x0a", 2, &rs2);
-
+skip:
 		close(s_socket);
 
 		stats->rtimes[i] = (rs2.tv_sec - rs1.tv_sec) * 1000 * 1000;
