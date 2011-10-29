@@ -54,10 +54,6 @@ void * pc_manager(void* args) {
 #endif
 
 		push_back(&request_list, buffer, 1, NULL, c_socket);
-			//write(c_socket,"test",5);
-
-		//close(c_socket);
-
   }
 
 
@@ -71,7 +67,7 @@ void pc_start(int port) {
 
   s_port = port;
 
-  args = (struct pt_args_t *) malloc(sizeof(struct st_args_t));
+  args = (struct pt_args_t *) malloc(sizeof(struct pt_args_t));
   args->request_list = &request_list;
   args->done = 0;
 

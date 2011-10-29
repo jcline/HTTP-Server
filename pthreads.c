@@ -8,30 +8,37 @@ static const char * const fivezeroone= "HTTP/1.0 501 Not Implemented\x0d\x0a";
 static const char * const twozerozero= "HTTP/1.0 200 OK\nContent-Type: text/plain\x0d\x0a";
 
 void * pt_thread(void* args) {
-/*	size_t len400 = strlen(fourzerozero);
+	size_t len400 = strlen(fourzerozero);
 	size_t len404 = strlen(fourzerofour);
 	size_t len501 = strlen(fivezeroone);
 	size_t len200 = strlen(twozerozero);
+
+	const char * endtrans = "\x0d\x0a", 
+		* restrict wdel = " \t",
+		* restrict sdel = ":/";
+	char * tok = NULL; 
+	char * restrict buffer, *ptr;
+	int c_socket, s_port, s_socket, filds[2];
+	long int h_addr;
 	size_t BUFFER_SIZE = 500;
-	assert(args);
-
-	struct pt_args_t * params = (struct pt_args_t *) args;
-
-	struct list_t * request_list = params->request_list;
-
-	assert(params->request_list);
-
-	int file = 0;
+	ssize_t rc = 0;
+	struct hostent* s_info;
+	struct list_t * request_list;
 	struct node_t* restrict val;
-	struct stat statinfo;
-	ssize_t sz = 0;
-	int c_socket, rc;
-	char* ptr = NULL, *endtrans = "\x0d\x0a",
-		*buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
-		*tok = NULL, *del = " ";
-	memset(buffer, 0, BUFFER_SIZE);
+	struct pt_args_t * params;
+	struct sockaddr_in s_addr;
 
-	while(1) { 
+	buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
+
+	params = (struct pt_args_t *) args;
+	request_list = params->request_list;
+
+	if(pipe(filds) < 0) {
+		perror("pipe failed");
+		return 0;
+	}
+
+	while(1) {
 		val = pop_front_n(request_list);
 
 		if(!val)
@@ -44,6 +51,98 @@ void * pt_thread(void* args) {
 		fflush(stdout);
 #endif
 
+		/*s_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+		if(connect(s_socket, (struct sockaddr *) &s_addr, sizeof(s_addr)) == -1) {
+			perror("Could not connect to server");
+			close(s_socket);
+			// TODO: Error to client
+			continue;
+		}
+		*/
+
+		// Read until theres nothing left
+		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
+#ifndef NDEBUG 
+		printf("read: %d %s ", rc, buffer);
+#endif
+		if(rc == -1) {
+			goto close;
+		}
+		ptr = buffer + rc;
+		ptr = '\0';
+
+		// Make sure this is a GET request
+		{
+			ptr = strtok_r(buffer, wdel, &tok);
+			if(!ptr) // there was no message we can work with
+				goto fo0;
+			// We just want the GET and the path
+			if(strcmp(ptr, "GET"))
+				goto foo;
+			
+			ptr = strtok_r(NULL, sdel, &tok);
+			if(!ptr)
+				goto fof;
+			if(strcmp(ptr, "http")) {
+				goto fof;
+
+			ptr = strtok_r(NULL, sdel, &tok);
+			if(!ptr)
+				goto fof;
+			}
+		}
+#ifndef NDEBUG
+		printf("CON: %s ", ptr);
+		fflush(stdout);
+#endif
+
+		goto fof;
+		sp_control(filds, c_socket, s_socket, 0);
+
+fo0:
+		rc = s_data(c_socket, fourzerozero, len400);
+#ifndef NDEBUG 
+		printf("400: %d ", rc);
+		fflush(stdout);
+#endif
+		goto close;
+
+fof:
+		rc = s_data(c_socket, fourzerofour, len404);
+#ifndef NDEBUG 
+		printf("404: %d ", rc);
+		fflush(stdout);
+#endif
+		goto close;
+
+foo:
+		rc = s_data(c_socket, fivezeroone, len501);
+#ifndef NDEBUG 
+		printf("501: %d ", rc);
+		fflush(stdout);
+#endif
+		goto close;
+
+close:
+		close(c_socket);
+	}
+
+/*
+	size_t len501 = strlen(fivezeroone);
+	size_t len200 = strlen(twozerozero);
+	assert(args);
+
+
+	assert(params->request_list);
+
+	int file = 0;
+	struct stat statinfo;
+	ssize_t sz = 0;
+	int c_socket, rc;
+	memset(buffer, 0, BUFFER_SIZE);
+
+	while(1) { 
 		// Read until theres nothing left
 		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
 #ifndef NDEBUG 
@@ -126,29 +225,6 @@ void * pt_thread(void* args) {
 #endif
 		goto close;
 
-fo0:
-		rc = s_data(c_socket, fourzerozero, len400);
-#ifndef NDEBUG 
-		printf("400: %d ", rc);
-		fflush(stdout);
-#endif
-		goto close;
-
-fof:
-		rc = s_data(c_socket, fourzerofour, len404);
-#ifndef NDEBUG 
-		printf("404: %d ", rc);
-		fflush(stdout);
-#endif
-		goto close;
-
-foo:
-		rc = s_data(c_socket, fivezeroone, len501);
-#ifndef NDEBUG 
-		printf("501: %d ", rc);
-		fflush(stdout);
-#endif
-		goto close;
 
 close:
 #ifndef NDEBUG 

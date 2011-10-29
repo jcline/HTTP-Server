@@ -2,14 +2,14 @@
 
 extern int errno;
 
-static const char * const restrict fourzerofour= "HTTP/1.0 404 Not Found\n\r";
-static const char * const restrict fivezeroone= "HTTP/1.0 501 Not Implemented\n\r";
-static const char * const restrict twozerozero= "HTTP/1.0 200 OK\n";
-static const char * const restrict get = "GET ";
-static const char * const restrict htv = " HTTP/1.0\x0d\x0a";
+static const char * const restrict fourzerofour= "HTTP/1.0 404 Not Found\x0d\x0a"; 
+static const char * const restrict fivezeroone= "HTTP/1.0 501 Not Implemented\x0d\x0a"; 
+static const char * const restrict twozerozero= "HTTP/1.0 200 OK\x0d\x0a"; 
+static const char * const restrict get = "GET";
+static const char * const restrict htv = " HTTP/1.0\x0d\x0a\x0d\x0a";
 
 void * ct_thread(void* args) {
-	char * buffer, * ptr;
+	char * buffer, * ptr, * s_name;
 	int c, i, done, num_files, s_port, s_socket, rc;
 	long int r, h_addr;
 	long long int slept = 0, rb;
@@ -36,6 +36,7 @@ void * ct_thread(void* args) {
 	rc = 0;
 	s_info = params->s_info;
 	s_port = params->s_port;
+	s_name = params->s_name;
 	stats = params->stats;
 	stats->rtimes = (long long int *) malloc(sizeof(long long int) * done);
 	stats->ftimes = (long long int *) malloc(sizeof(long long int) * done);
@@ -82,13 +83,14 @@ void * ct_thread(void* args) {
 		}
 
 		ptr = (char *) file->data;
-		sz = file->size;
 
-		strcpy(buffer, get);
-		strcpy(buffer+lenget, ptr);
-		strcpy(buffer+lenget+sz, htv);
+		if(s_name)
+			sz = sprintf(buffer, "%s http://%s:%d%s %s", get, s_name, s_port, ptr, htv);
+		else
+			sz = sprintf(buffer, "%s %s %s", get, ptr, htv);
+		printf("%s\n", buffer);
 
-		c = s_data(s_socket, buffer, lenget+sz+lenhtv);
+		c = s_data(s_socket, buffer, sz);
 #ifndef NDEBUG
 		printf("%d ", c);
 		fflush(stdout);

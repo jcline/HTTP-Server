@@ -5,7 +5,7 @@ extern int errno;
 static const char * const fourzerozero= "HTTP/1.0 400 Bad Request\x0d\x0a";
 static const char * const fourzerofour= "HTTP/1.0 404 Not Found\x0d\x0a";
 static const char * const fivezeroone= "HTTP/1.0 501 Not Implemented\x0d\x0a";
-static const char * const twozerozero= "HTTP/1.0 200 OK\nContent-Type: text/plain\x0d\x0a\x0d\x0a";
+static const char * const twozerozero= "HTTP/0.9 200 OK\nContent-Type: text/plain\x0d\x0a";
 
 void * st_thread(void* args) {
 	size_t len400 = strlen(fourzerozero);
@@ -120,11 +120,13 @@ void * st_thread(void* args) {
 #endif
 		close(file);
 
+		/*
 		rc = s_data( c_socket, endtrans, 2);
 #ifndef NDEBUG 
 		printf("end: %d ", rc);
 		fflush(stdout);
 #endif
+		*/
 		goto close;
 
 fo0:
@@ -152,10 +154,6 @@ foo:
 		goto close;
 
 close:
-#ifndef NDEBUG 
-		printf("\n");
-		fflush(stdout);
-#endif
 		free(val->data);
 		free(val);
 
@@ -165,6 +163,12 @@ close:
 		fflush(stdout);
 #endif
 		}
+#ifndef NDEBUG
+		else {
+			printf("closed\n");
+			fflush(stdout);
+		}
+#endif
 
 	}
 

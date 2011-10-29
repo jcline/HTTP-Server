@@ -10,7 +10,7 @@ struct ct_stats_t* statarr;
 
 static size_t numr = 0;
 
-void cc_start(struct list_t* fl, int iterations, int port, char* hn) {
+void cc_start(struct list_t* fl, int iterations, int port, char* hn, char* proxy) {
   assert(!init_check);
   init_check = 1;
   file_list = fl;
@@ -18,7 +18,10 @@ void cc_start(struct list_t* fl, int iterations, int port, char* hn) {
 	numr = iterations;
 
 	struct hostent* s_info;
-	s_info = gethostbyname(hn);
+	if(proxy)
+		s_info = gethostbyname(proxy);
+	else
+		s_info = gethostbyname(hn);
 
 
   cthreads = (pthread_t*) malloc(sizeof(pthread_t)*MAX_CLIENT_THREADS);
@@ -37,9 +40,11 @@ void cc_start(struct list_t* fl, int iterations, int port, char* hn) {
 			args->stats->BAD = 0;
 			args->stats->FOUND = 0;
 			args->stats->IMPL = 0;
+			if(proxy) 
+				args->s_name = hn;
+			else
+				args->s_name = NULL;
 
-      //cthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
-      //assert(cthreads[i]);
       pthread_create(&cthreads[i], NULL, ct_thread, (void*) args);
   }
 

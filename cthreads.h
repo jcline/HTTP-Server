@@ -14,6 +14,7 @@ struct ct_args_t {
 	struct sockaddr_in * s_addr;
 	struct hostent* s_info;
 	struct ct_stats_t * stats;
+	char* s_name;
 };
 
 void * ct_thread(void* args);

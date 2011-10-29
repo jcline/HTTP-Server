@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
 		printf("Running in shared memory mode\n");
 	} 
 	else {
-		printf("Running in shared memory mode\n");
+		printf("Running in socket mode\n");
 	}
 
 	pc_start(port);

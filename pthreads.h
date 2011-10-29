@@ -5,7 +5,9 @@
 
 struct pt_args_t {
 	struct list_t * request_list;
-	int done;
+	int done, s_port;
+	struct sockaddr_in * s_addr;
+	struct hostent* s_info;
 };
 
 void * pt_thread(void* args);
