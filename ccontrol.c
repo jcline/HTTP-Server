@@ -10,7 +10,7 @@ struct ct_stats_t* statarr;
 
 static size_t numr = 0;
 
-void cc_start(struct list_t* fl, int iterations, int port, char* hn, char* proxy) {
+void cc_start(struct list_t* fl, int iterations, int port, char* hn, char* proxy, int p_port) {
   assert(!init_check);
   init_check = 1;
   file_list = fl;
@@ -44,6 +44,7 @@ void cc_start(struct list_t* fl, int iterations, int port, char* hn, char* proxy
 				args->s_name = hn;
 			else
 				args->s_name = NULL;
+			args->p_port = p_port;
 
       pthread_create(&cthreads[i], NULL, ct_thread, (void*) args);
   }
@@ -63,6 +64,7 @@ void cc_stop() {
 	stats.BAD = 0;
 	stats.FOUND = 0;
 	stats.IMPL = 0;
+	stats.tr = 0;
 
 	double ttime = 0,
 			 ttimemax = statarr[0].ttime,
@@ -82,17 +84,18 @@ void cc_stop() {
 		stats.BAD += statarr[i].BAD;
 		stats.FOUND += statarr[i].FOUND;
 		stats.IMPL += statarr[i].IMPL;
+		stats.tr += statarr[i].tr;
 
 		ttime += statarr[i].ttime;
 		ttimemax = (statarr[i].ttime > ttimemax) ? statarr[i].ttime : ttimemax;
 		ttimemin = (statarr[i].ttime < ttimemin) ? statarr[i].ttime : ttimemin;
 
 		for(j = 0; j < numr; ++j) {
-			long long int rt = statarr[i].rtimes[j],
+			int rt = statarr[i].rtimes[j],
 					 ft = statarr[i].ftimes[j],
 					 dt = statarr[i].dtimes[j];
 
-			printf("%Lu\t%Lu\t%Lu\n", rt, ft, dt);
+			printf("%d\t%d\t%d\n", rt, ft, dt);
 
 			rtime += rt;
 			ftime += ft;
@@ -250,9 +253,26 @@ void cc_stop() {
 			dtmax_unit = "ms";
 	}
 
-	printf("Stats: 200: %ld\t400: %ld\t404: %ld\t501: %ld\n\n",
+	double tr = stats.tr;
+	char* tr_unit = "b";
+	if(tr > 1000) {
+		tr /= 1000;
+		if(tr > 1000) {
+			tr /= 1000;
+			if(tr > 1000) {
+				tr /= 1000;
+				tr_unit = "Gb";
+			}
+			else
+				tr_unit = "Mb";
+		}
+		else tr_unit = "Kb";
+	}
+
+
+	printf("Stats: 200: %llu\t400: %llu\t404: %llu\t501: %llu TR: %f %s\n\n",
 			stats.OK, stats.BAD,
-			stats.FOUND, stats.IMPL );
+			stats.FOUND, stats.IMPL, tr, tr_unit );
 	printf("Average time to complete all trials:\t\t\t%f %s\n",
 			ttimeavg, tta_unit);
 	printf("Minimum time to complete a trial:\t\t\t%f %s\n",

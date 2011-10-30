@@ -54,9 +54,9 @@ int main(int argc, char** argv) {
 
 
 	if(use_proxy)
-		cc_start(&file_list, trials, s_port, host, proxy);
+		cc_start(&file_list, trials, s_port, host, proxy, p_port);
 	else
-		cc_start(&file_list, trials, s_port, host, NULL);
+		cc_start(&file_list, trials, s_port, host, NULL, 0);
 
 	cc_stop();
 	destroy(&file_list);

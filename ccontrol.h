@@ -5,7 +5,7 @@
 
 extern size_t MAX_CLIENT_THREADS;
 
-void cc_start(struct list_t* fl, int iterations, int port, char* hn, char* proxy);
+void cc_start(struct list_t* fl, int iterations, int port, char* hn, char* proxy, int p_port);
 void cc_stop();
 
 #endif

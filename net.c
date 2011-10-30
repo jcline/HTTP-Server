@@ -15,15 +15,20 @@ size_t s_data(int fd, const char* buf, size_t size) {
 
 ssize_t sp_control(int fd[2], int out, int in, size_t size) {
 	ssize_t r = 0, rt = 0;
+	size_t s = (!size) ? 16384 : size;
 
 	do {
-		r = sp_data(fd[1], in, size);
-		if(r == -1)
+		r = sp_data(fd[1], in, s);
+		fflush(stdout);
+		if(r == -1 || r == 0)
 			break;
-		sp_data(out, fd[0], r);
+		r = sp_data(out, fd[0], r);
+		if(r == -1 || r == 0)
+			break;
 		rt += r;
-		size -= r;
-	} while(size);
+		if(size)
+			s -= r;
+	} while(s);
 
 	return rt;
 }
@@ -36,9 +41,8 @@ ssize_t sp_data(int out, int in, size_t size) {
 	do {
 		rc = splice(in, NULL, out, NULL, s_s, SPLICE_F_MOVE);
 		if(rc == -1) {
-			fprintf(stderr, "%d: %s\n", errno, strerror(errno));
+			fprintf(stderr, "sp_data: %d,%d,%d: %s\n", out, in, errno, strerror(errno));
 			return -1;
-			break;
 		}
 		s_s -= rc;
 		size -= rc;

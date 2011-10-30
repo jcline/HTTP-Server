@@ -52,7 +52,7 @@ void * st_thread(void* args) {
 		// Read until theres nothing left
 		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
 #ifndef NDEBUG 
-		printf("read: %d ", rc);
+		printf("read: %d %s ", rc, buffer);
 #endif
 		if(rc == -1) {
 			goto close;

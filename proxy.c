@@ -12,10 +12,9 @@ int main(int argc, char** argv) {
 		exit(1);
 	}
 
-	strcpy(host,argv[1]);
-	port = atoi(argv[2]);
-	MAX_PROXY_THREADS = atoi(argv[3]);
-	shared_memory = ( !strcmp(argv[4], "shared") ) ? 1 : 0;
+	port = atoi(argv[1]);
+	MAX_PROXY_THREADS = atoi(argv[2]);
+	shared_memory = ( !strcmp(argv[3], "shared") ) ? 1 : 0;
 	if(shared_memory) {
 		printf("Running in shared memory mode\n");
 	} 

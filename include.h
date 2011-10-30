@@ -23,6 +23,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/errno.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>

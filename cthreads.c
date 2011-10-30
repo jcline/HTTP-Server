@@ -10,7 +10,7 @@ static const char * const restrict htv = " HTTP/1.0\x0d\x0a\x0d\x0a";
 
 void * ct_thread(void* args) {
 	char * buffer, * ptr, * s_name;
-	int c, i, done, num_files, s_port, s_socket, rc;
+	int c, i, done, num_files, s_port, s_socket, rc, p_port;
 	long int r, h_addr;
 	long long int slept = 0, rb;
 
@@ -36,11 +36,12 @@ void * ct_thread(void* args) {
 	rc = 0;
 	s_info = params->s_info;
 	s_port = params->s_port;
+	p_port = params->p_port;
 	s_name = params->s_name;
 	stats = params->stats;
-	stats->rtimes = (long long int *) malloc(sizeof(long long int) * done);
-	stats->ftimes = (long long int *) malloc(sizeof(long long int) * done);
-	stats->dtimes = (long long int *) malloc(sizeof(long long int) * done);
+	stats->rtimes = (int *) malloc(sizeof(int) * done);
+	stats->ftimes = (int *) malloc(sizeof(int) * done);
+	stats->dtimes = (int *) malloc(sizeof(int) * done);
 	assert(stats->rtimes);
 	assert(stats->ftimes);
 	assert(stats->dtimes);
@@ -50,6 +51,7 @@ void * ct_thread(void* args) {
 		stats->ftimes[i] = 0;
 		stats->dtimes[i] = 0;
 	}
+	stats->tr = 0;
 
 	memcpy(&h_addr, s_info->h_addr, s_info->h_length);
 
@@ -66,7 +68,7 @@ void * ct_thread(void* args) {
 		lrand48_r(&state, &r);
 		r = (int)(r % 100);
 		r *= 10000;
-		usleep(r);
+		//usleep(r);
 		rb = r;
 		slept += rb;
 
@@ -85,10 +87,9 @@ void * ct_thread(void* args) {
 		ptr = (char *) file->data;
 
 		if(s_name)
-			sz = sprintf(buffer, "%s http://%s:%d%s %s", get, s_name, s_port, ptr, htv);
+			sz = sprintf(buffer, "%s http://%s:%d%s %s", get, s_name, p_port, ptr, htv);
 		else
 			sz = sprintf(buffer, "%s %s %s", get, ptr, htv);
-		printf("%s\n", buffer);
 
 		c = s_data(s_socket, buffer, sz);
 #ifndef NDEBUG
@@ -100,6 +101,7 @@ void * ct_thread(void* args) {
 		gettimeofday(&ds, NULL);
 
 		c = r_data_tv(s_socket, &buffer, &BUFFER_SIZE, "\x0d\x0a", 2, 2, &rs2);
+		stats->tr += c;
 #ifndef NDEBUG
 		printf("%d\n", c);
 		fflush(stdout);
@@ -141,14 +143,14 @@ skip:
 		stats->rtimes[i] += (rs2.tv_usec - rs1.tv_usec);
 		stats->ftimes[i] = (ts2.tv_sec - ts1.tv_sec) * 1000 * 1000;
 		stats->ftimes[i] += (ts2.tv_usec - ts1.tv_usec);
-		stats->ftimes[i] -= rb;
+		//stats->ftimes[i] -= rb;
 		stats->dtimes[i] = (ts2.tv_sec - ds.tv_sec) * 1000 * 1000;
 		stats->dtimes[i] += (ts2.tv_usec - ds.tv_usec);
 	}
 	gettimeofday(&fs2, NULL);
 	stats->ttime = (fs2.tv_sec - fs1.tv_sec) * 1000 * 1000;
 	stats->ttime += (fs2.tv_usec - fs1.tv_usec);
-	stats->ttime -= slept;
+	//stats->ttime -= slept;
 
 	free(args);
 	free(buffer);
