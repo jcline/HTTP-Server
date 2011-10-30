@@ -100,7 +100,7 @@ void * ct_thread(void* args) {
 		c = 0;
 		gettimeofday(&ds, NULL);
 
-		c = r_data_tv(s_socket, &buffer, &BUFFER_SIZE, "\x0d\x0a", 2, 2, &rs2);
+		c = r_data_tv_c(s_socket, &buffer, &BUFFER_SIZE, &rs2);
 		stats->tr += c;
 #ifndef NDEBUG
 		printf("%d\n", c);
