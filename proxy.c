@@ -22,6 +22,10 @@ int main(int argc, char** argv) {
 		printf("Running in socket mode\n");
 	}
 
+	struct sigaction sa;
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
+
 	pc_start(port);
 	pc_stop();
 
