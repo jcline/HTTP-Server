@@ -8,6 +8,8 @@ static int init_check = 0;
 static pthread_t* cthreads;
 struct ct_stats_t* statarr;
 
+struct timeval total_time_start, total_time_stop;
+
 static size_t numr = 0;
 
 void cc_start(struct list_t* fl, int iterations, int port, char* hn, char* proxy, int p_port) {
@@ -55,9 +57,14 @@ void cc_stop() {
 	assert(init_check);
 
 	int i, j;
+
+	gettimeofday(&total_time_start, NULL);
 	for(i = 0; i < MAX_CLIENT_THREADS; ++i) {
 		pthread_join(cthreads[i], NULL);
 	}
+	gettimeofday(&total_time_stop, NULL);
+	int total_time = (total_time_stop.tv_usec - total_time_start.tv_usec) +
+		(total_time_stop.tv_sec * 1000 * 1000 - total_time_start.tv_sec * 1000 * 1000 );
 
 	struct ct_stats_t stats;
 	stats.OK = 0;
@@ -123,7 +130,8 @@ void cc_stop() {
 	double dtimeavg = dtime/(MAX_CLIENT_THREADS*numr);
 
 	char* rate_unit = "b";
-	double rate = stats.tr/(double)(ttimemax/(1000*1000));
+	printf("%f\n", (double)total_time/(1000*1000));
+	double rate = stats.tr/(double) (total_time / (1000*1000));
 	if(rate > 1000) {
 		rate /= 1000;
 		if(rate > 1000) {

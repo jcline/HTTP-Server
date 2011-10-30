@@ -54,9 +54,6 @@ void * sc_manager(void* args) {
 #endif
 
 		push_back(&request_list, buffer, 1, NULL, c_socket);
-			//write(c_socket,"test",5);
-
-		//close(c_socket);
 
   }
 

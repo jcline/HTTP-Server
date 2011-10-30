@@ -32,7 +32,6 @@
 
 // Project files
 // Data structures
-#include "hash.h"
 #include "list.h"
 //   Networking
 #include "net.h"
@@ -43,8 +42,6 @@
 #include "pcontrol.h"
 #include "sthreads.h"
 #include "scontrol.h"
-//   Logging
-#include "log.h"
 
 #endif
 

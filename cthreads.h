@@ -6,6 +6,7 @@
 struct ct_stats_t {
 	unsigned long long int OK, BAD, FOUND, IMPL, tr;
 	int ttime, *rtimes, *ftimes, *dtimes;
+	double *rate;
 };
 
 struct ct_args_t {

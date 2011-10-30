@@ -42,9 +42,11 @@ void * ct_thread(void* args) {
 	stats->rtimes = (int *) malloc(sizeof(int) * done);
 	stats->ftimes = (int *) malloc(sizeof(int) * done);
 	stats->dtimes = (int *) malloc(sizeof(int) * done);
+	stats->rate = (double *) malloc(sizeof(double) * done);
 	assert(stats->rtimes);
 	assert(stats->ftimes);
 	assert(stats->dtimes);
+	assert(stats->rate);
 
 	for(i = 0; i < done; ++i) {
 		stats->rtimes[i] = 0;

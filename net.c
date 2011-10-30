@@ -19,8 +19,10 @@ ssize_t sp_control(int fd[2], int out, int in, size_t size) {
 
 	do {
 		r = sp_data(fd[1], in, s);
+#ifndef NDEBUG
 		printf("spc: %d ", r);
 		fflush(stdout);
+#endif
 		if(r == -1 || r == 0)
 			break;
 		r = sp_data(out, fd[0], r);
@@ -36,8 +38,7 @@ ssize_t sp_control(int fd[2], int out, int in, size_t size) {
 
 ssize_t sp_data(int out, int in, size_t size) {
 	ssize_t rc = 0, r = 0;
-	//size_t s_s = (size > 16384) ? 16384 : size;
-	size_t s_s = size;
+	size_t s_s = (size > 16384) ? 16384 : size;
 //ssize_t splice(int in_in, loff_t *off_in, int in_out,
 //loff_t *off_out, size_t len, unsigned int flags);
 	do {
@@ -46,14 +47,17 @@ ssize_t sp_data(int out, int in, size_t size) {
 			fprintf(stderr, "sp_data: %d,%d,%d: %s\n", out, in, errno, strerror(errno));
 			return -1;
 		}
+#ifndef NDEBUG
 		printf("spd: %d/%d ", rc, size);
 		fflush(stdout);
+#endif
 		s_s -= rc;
 		size -= rc;
 		if(!s_s && size) {
 			s_s = (size > 16384) ? 16384 : size;
 		}
 		r += rc;
+		return rc;
 	} while(rc != 0 && size);
 
 	return r;
@@ -64,8 +68,7 @@ size_t r_data_tv(int fd, char** buf, size_t* bs, const char* stop, size_t ss, si
 	char* ptr = *buf;
 	do {
 		ndone = count;
-		//printf("t");
-		//fflush(stdout);
+		//printf("t"); //fflush(stdout);
 		rc = read(fd, ptr, chunk);
 		if(rc < 0) {
 			perror("read failed");
@@ -129,8 +132,10 @@ size_t r_data_tv_c(int fd, char** buf, size_t* bs, struct timeval* restrict init
 	ssize_t rc = 0;
 	char* ptr = *buf;
 	do {
+#ifndef NDEBUG
 		//printf("t");
 		//fflush(stdout);
+#endif
 		rc = read(fd, ptr, chunk);
 		if(rc <= 0) {
 			if(fi) {
@@ -140,8 +145,10 @@ size_t r_data_tv_c(int fd, char** buf, size_t* bs, struct timeval* restrict init
 			}
 			break;
 		}
-		//printf("%d\n", rc);
+#ifndef NDEBUG
+		printf("%d\n", rc);
 		//fflush(stdout);
+#endif
 
 		if(fi) {
 			if(initial_resp)
