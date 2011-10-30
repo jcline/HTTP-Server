@@ -79,6 +79,7 @@ void cc_stop() {
 			 dtimemax = 0,
 			 dtimemin = statarr[0].dtimes[0];
 
+
 	for(i = 0; i < MAX_CLIENT_THREADS; ++i) {
 		stats.OK += statarr[i].OK;
 		stats.BAD += statarr[i].BAD;
@@ -120,6 +121,22 @@ void cc_stop() {
 	double rtimeavg = rtime/(MAX_CLIENT_THREADS*numr);
 	double ftimeavg = ftime/(MAX_CLIENT_THREADS*numr);
 	double dtimeavg = dtime/(MAX_CLIENT_THREADS*numr);
+
+	char* rate_unit = "b";
+	double rate = stats.tr/(double)(ttimemax/(1000*1000));
+	if(rate > 1000) {
+		rate /= 1000;
+		if(rate > 1000) {
+			rate /= 1000;
+			if(rate > 1000) {
+				rate /= 1000;
+				rate_unit = "Gb";
+			}
+			else
+				rate_unit = "Mb";
+		}
+		else rate_unit = "Kb";
+	}
 
 	char* tta_unit = "us";
 	if(ttimeavg > 1000) {
@@ -270,9 +287,11 @@ void cc_stop() {
 	}
 
 
-	printf("Stats: 200: %llu\t400: %llu\t404: %llu\t501: %llu TR: %f %s\n\n",
+	printf("Stats: 200: %llu\t400: %llu\t404: %llu\t501: %llu TR: %f %s at %f %s/s\n\n",
 			stats.OK, stats.BAD,
-			stats.FOUND, stats.IMPL, tr, tr_unit );
+			stats.FOUND, stats.IMPL,
+		 	tr, tr_unit,
+		 	rate, rate_unit);
 	printf("Average time to complete all trials:\t\t\t%f %s\n",
 			ttimeavg, tta_unit);
 	printf("Minimum time to complete a trial:\t\t\t%f %s\n",

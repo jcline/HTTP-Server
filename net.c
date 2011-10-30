@@ -19,6 +19,7 @@ ssize_t sp_control(int fd[2], int out, int in, size_t size) {
 
 	do {
 		r = sp_data(fd[1], in, s);
+		printf("spc: %d ", r);
 		fflush(stdout);
 		if(r == -1 || r == 0)
 			break;
@@ -35,7 +36,8 @@ ssize_t sp_control(int fd[2], int out, int in, size_t size) {
 
 ssize_t sp_data(int out, int in, size_t size) {
 	ssize_t rc = 0, r = 0;
-	size_t s_s = (size > 16384) ? 16384 : size;
+	//size_t s_s = (size > 16384) ? 16384 : size;
+	size_t s_s = size;
 //ssize_t splice(int in_in, loff_t *off_in, int in_out,
 //loff_t *off_out, size_t len, unsigned int flags);
 	do {
@@ -44,10 +46,12 @@ ssize_t sp_data(int out, int in, size_t size) {
 			fprintf(stderr, "sp_data: %d,%d,%d: %s\n", out, in, errno, strerror(errno));
 			return -1;
 		}
+		printf("spd: %d/%d ", rc, size);
+		fflush(stdout);
 		s_s -= rc;
 		size -= rc;
 		if(!s_s && size) {
-			s_s = size;
+			s_s = (size > 16384) ? 16384 : size;
 		}
 		r += rc;
 	} while(rc != 0 && size);
@@ -117,5 +121,53 @@ size_t r_data_tv(int fd, char** buf, size_t* bs, const char* stop, size_t ss, si
 		}
 		ptr = *buf + r - 1;
 	} while(ndone);
+	return r;
+}
+
+size_t r_data_tv_c(int fd, char** buf, size_t* bs, struct timeval* restrict initial_resp) {
+	size_t chunk = *bs - 1, r = 0, fi = 1;
+	ssize_t rc = 0;
+	char* ptr = *buf;
+	do {
+		//printf("t");
+		//fflush(stdout);
+		rc = read(fd, ptr, chunk);
+		if(rc <= 0) {
+			if(fi) {
+				if(initial_resp)
+					gettimeofday(initial_resp, NULL);
+				fi = 0;
+			}
+			break;
+		}
+		//printf("%d\n", rc);
+		//fflush(stdout);
+
+		if(fi) {
+			if(initial_resp)
+				gettimeofday(initial_resp, NULL);
+			fi = 0;
+		}
+
+		r += rc;
+
+		chunk -= rc;
+		if(!chunk) {
+			size_t ns = *bs;
+			chunk = ns/2;
+			*bs += chunk;
+			errno = 0;
+			ptr = realloc(*buf, *bs);
+			if(!ptr) {
+				perror("realloc failed");
+			}
+			else {
+				*buf = ptr;
+				memset(*buf+ns, 0, chunk);
+			}
+			--chunk;
+		}
+		ptr = *buf + r - 1;
+	} while(1);
 	return r;
 }

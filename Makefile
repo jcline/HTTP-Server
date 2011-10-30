@@ -1,6 +1,6 @@
 CC			= gcc
-#CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} #-DDEBUG
-CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
+CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
+#CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O3
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc

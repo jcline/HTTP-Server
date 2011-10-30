@@ -24,9 +24,7 @@ struct cache_t {
 
 struct list_t {
 	struct node_t *head, *tail;
-	size_t size, cache_size;
-	struct cache_t* restrict cache;
-	int cache_init;
+	volatile size_t size;
 	pthread_mutex_t global_lock;
 	pthread_cond_t work;
 };
