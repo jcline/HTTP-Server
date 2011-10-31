@@ -3,7 +3,6 @@
 size_t MAX_PROXY_THREADS = 10;
 
 int main(int argc, char** argv) {
-	char host[255], buf[255];
 	int port;
 	size_t shared_memory;
 

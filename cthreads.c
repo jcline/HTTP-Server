@@ -10,13 +10,11 @@ static const char * const restrict htv = " HTTP/1.0\x0d\x0a\x0d\x0a";
 
 void * ct_thread(void* args) {
 	char * buffer, * ptr, * s_name;
-	int c, i, done, num_files, s_port, s_socket, rc, p_port;
+	int c, i, done, num_files, s_port, s_socket, p_port;
 	long int r, h_addr;
 	long long int slept = 0, rb;
 
 	size_t sz;
-	size_t lenget = strlen(get);
-	size_t lenhtv = strlen(htv);
 	size_t BUFFER_SIZE = 5000;
 
 	struct ct_args_t * restrict params = (struct ct_args_t *) args;
@@ -33,7 +31,6 @@ void * ct_thread(void* args) {
 	done = params->done;
 	file_list = params->file_list;
 	num_files = file_list->size;
-	rc = 0;
 	s_info = params->s_info;
 	s_port = params->s_port;
 	p_port = params->p_port;

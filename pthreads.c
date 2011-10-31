@@ -11,24 +11,19 @@ void * pt_thread(void* args) {
 	size_t len400 = strlen(fourzerozero);
 	size_t len404 = strlen(fourzerofour);
 	size_t len501 = strlen(fivezeroone);
-	size_t len200 = strlen(twozerozero);
 
 	const char * endtrans = "\x0d\x0a", 
 		* restrict wdel = " \t",
-		* restrict sdel = ":/",
-		* restrict ndel = "\0";
+		* restrict sdel = ":/";
 	char * tok = NULL; 
 	char * restrict buffer, * restrict tmpbuffer, *ptr, *pptr;
-	int c_socket, s_port, s_socket, filds[2], rv = 0;
-	long int h_addr;
+	int c_socket, s_socket = 0, filds[2], rv = 0;
 	size_t BUFFER_SIZE = 500;
 	ssize_t rc = 0;
 	struct addrinfo hints, *result = NULL;
-	struct hostent* s_info;
 	struct list_t * request_list;
 	struct node_t* restrict val;
 	struct pt_args_t * params;
-	struct sockaddr_in s_addr;
 
 	buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 	tmpbuffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
@@ -94,7 +89,6 @@ void * pt_thread(void* args) {
 			pptr = strtok_r(NULL, sdel, &tok);
 			if(!ptr)
 				goto fof;
-			s_port = atoi(ptr);
 			if( (rv = getaddrinfo(ptr, pptr, &hints, &result)) != 0) {
 				fprintf(stderr,"getaddrinfo failure: %s", gai_strerror(rv));
 				goto fof;
