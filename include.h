@@ -30,6 +30,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+// Shared memory
+#include <sys/shm.h>
+
 // Project files
 // Data structures
 #include "list.h"
