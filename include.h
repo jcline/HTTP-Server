@@ -36,6 +36,7 @@
 // Project files
 // Data structures
 #include "list.h"
+#include "shared.h"
 //   Networking
 #include "net.h"
 //   Threading

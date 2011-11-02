@@ -17,10 +17,10 @@ void * pt_thread(void* args) {
 		* restrict sdel = ":/";
 	char * tok = NULL; 
 	char * restrict buffer, * restrict tmpbuffer, *ptr, *pptr;
-	int c_socket, s_socket = 0, filds[2], rv = 0;
+	int c_socket, s_socket = 0, filds[2], rv = 0, use_shared = 0, local = 0;
 	size_t BUFFER_SIZE = 500;
 	ssize_t rc = 0;
-	struct addrinfo hints, *result = NULL;
+	struct addrinfo hints, *result = NULL, *me = NULL;
 	struct list_t * request_list;
 	struct node_t* restrict val;
 	struct pt_args_t * params;
@@ -30,6 +30,7 @@ void * pt_thread(void* args) {
 
 	params = (struct pt_args_t *) args;
 	request_list = params->request_list;
+	use_shared = params->use_shared;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -39,7 +40,10 @@ void * pt_thread(void* args) {
 		perror("pipe failed");
 		return 0;
 	}
-	printf("filds: %d,%d\n", filds[0], filds[1]);
+
+	while( (rv = getaddrinfo("localhost", NULL, &hints, &me)) != 0) {
+		fprintf(stderr,"getaddrinfo failure: %s", gai_strerror(rv));
+	}
 
 	while(1) {
 		val = pop_front_n(request_list);
@@ -108,8 +112,31 @@ void * pt_thread(void* args) {
 		}
 
 		{
-			struct addrinfo *i;
+			struct addrinfo *i, *j;
+			// Try to find a valid entry we can connect to from getaddrinfo call
 			for(i = result; i != NULL; i = i->ai_next) {
+				// Detect local connections
+				if(use_shared) {
+					local=0;
+					for(j = me; j != NULL; j = j->ai_next) {
+						switch(i->ai_family) {
+							case AF_INET:
+								if(((struct sockaddr_in *) i->ai_addr)->sin_addr.s_addr == 
+								((struct sockaddr_in *) j->ai_addr)->sin_addr.s_addr)
+									local = 1;
+								goto cont;
+								break;
+							// Untested ipv6 support, theoretically correct
+							case AF_INET6:
+								if(!memcmp( ((struct sockaddr_in6 *) i->ai_addr)->sin6_addr.s6_addr,
+								((struct sockaddr_in6 *) j->ai_addr)->sin6_addr.s6_addr, 16))
+									local = 1;
+								goto cont;
+								break;
+						}
+					}
+				}
+				// Try to connect to entry for getaddrinfo lookup
 				if( (s_socket = socket(i->ai_family, i->ai_socktype, i->ai_protocol)) == -1) {
 					continue;
 				}
@@ -124,6 +151,9 @@ void * pt_thread(void* args) {
 			if(!i)
 				goto fof;
 		}
+cont:
+		if(local)
+			printf("local req ");
 
 #ifndef NDEBUG
 		printf("s: %d ", s_socket);

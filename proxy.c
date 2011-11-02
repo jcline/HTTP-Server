@@ -3,8 +3,7 @@
 size_t MAX_PROXY_THREADS = 10;
 
 int main(int argc, char** argv) {
-	int port;
-	size_t shared_memory;
+	int port, shared_memory;
 
 	if( argc < 4 ) {
 		fprintf(stderr, "Not enough arguments!\n");
@@ -25,8 +24,13 @@ int main(int argc, char** argv) {
 	sa.sa_handler = SIG_IGN;
 	sigaction(SIGPIPE, &sa, NULL);
 
-	pc_start(port);
+	struct sigaction sac;
+	sac.sa_handler = pc_kill;
+	sigaction(SIGPIPE, &sac, NULL);
+
+	pc_start(port, shared_memory);
 	pc_stop();
 
 	return 0;
 }
+

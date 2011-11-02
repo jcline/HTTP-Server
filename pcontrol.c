@@ -7,6 +7,7 @@ static struct sockaddr_in s_addr;
 
 static int init_check = 0;
 int s_addr_sz = sizeof(struct sockaddr_in); // !!
+int use_shared = 0;
 
 static pthread_t** pthreads;
 static pthread_t manager;
@@ -21,7 +22,6 @@ void * pc_manager(void* args) {
 
 	int TRUE = 1;
 	setsockopt(s_socket, SOL_SOCKET, SO_REUSEADDR, (char*) &TRUE, sizeof(TRUE));
-
 
   s_addr.sin_addr.s_addr=INADDR_ANY;
   s_addr.sin_port=htons(s_port);
@@ -60,7 +60,7 @@ void * pc_manager(void* args) {
   return NULL;
 }
 
-void pc_start(int port) {
+void pc_start(int port, int us) {
   assert(!init_check);
   init_check = 1;
   init(&request_list);
@@ -70,8 +70,12 @@ void pc_start(int port) {
   args = (struct pt_args_t *) malloc(sizeof(struct pt_args_t));
   args->request_list = &request_list;
   args->done = 0;
+	args->use_shared = us;
+	use_shared = us;
 
   pthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_PROXY_THREADS);
+
+
 
   int i;
   for(i = 0; i < MAX_PROXY_THREADS; ++i) {
@@ -103,4 +107,11 @@ void pc_stop() {
 	}
 
 	free(pthreads);
+}
+
+void pc_kill() {
+	for(int i = 0; i < MAX_PROXY_THREADS; ++i) {
+		shared_end(i);
+		pthread_kill(*(pthreads[i]), SIGKILL);
+	}
 }

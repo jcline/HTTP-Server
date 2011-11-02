@@ -5,7 +5,7 @@
 
 struct pt_args_t {
 	struct list_t * request_list;
-	int done, s_port;
+	int done, s_port, use_shared;
 	struct sockaddr_in * s_addr;
 	struct hostent* s_info;
 };

@@ -1,6 +1,6 @@
 CC			= gcc
-#CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
-CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
+CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
+#CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O3
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
@@ -11,6 +11,7 @@ SSRC = \
 			net.c \
 			sthreads.c \
 			scontrol.c \
+			shared.c \
 			main.c
 
 CSRC= \
@@ -25,6 +26,7 @@ PSRC = \
 			net.c \
 			pthreads.c \
 			pcontrol.c \
+			shared.c \
 			proxy.c
 
 

@@ -5,7 +5,8 @@
 
 extern size_t MAX_PROXY_THREADS;
 
-void pc_start();
+void pc_start(int port, int us);
 void pc_stop();
+void pc_kill();
 
 #endif
