@@ -49,13 +49,12 @@ void * pc_manager(void* args) {
 			perror("accept error");
 			continue;
 		}
-#ifndef NDEBUG // We want the delegation to be as fast as possible
+#ifndef NDEBUG 
     printf("new connection\t%d\n", c_socket);
 #endif
 
 		push_back(&request_list, buffer, 1, NULL, c_socket);
   }
-
 
   return NULL;
 }

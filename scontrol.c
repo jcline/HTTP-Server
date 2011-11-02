@@ -5,11 +5,11 @@ static struct st_args_t * args;
 static int s_socket, s_port;
 static struct sockaddr_in s_addr;
 
-static int init_check = 0;
+static int init_check = 0, use_shared = 0;
 int s_addr_sz = sizeof(struct sockaddr_in); // !!
 
 static pthread_t** sthreads;
-static pthread_t manager;
+static pthread_t manager, shm_manager;
 
 void * sc_manager(void* args) {
 
@@ -49,7 +49,7 @@ void * sc_manager(void* args) {
 			perror("accept error");
 			continue;
 		}
-#ifndef NDEBUG // We want the delegation to be as fast as possible
+#ifndef NDEBUG 
     printf("new connection\t%d\n", c_socket);
 #endif
 
@@ -57,16 +57,48 @@ void * sc_manager(void* args) {
 
   }
 
-
   return NULL;
 }
 
-void sc_start(int port) {
+void * sc_shm_manager(void* args) {
+	int shmid = 0;
+
+	do {
+		usleep(100000); // sleep for 100ms
+#ifndef NDEBUG
+	printf("Attempting to aquire control shm\n");
+	fflush(stdout);
+#endif
+
+		shmid = shmget(0xaa, sizeof(struct shm_control_t), 0);
+		if(shmid == -1) {
+			if(errno == ENOENT)
+				continue;
+			perror("shmget");
+		}
+		else
+			break;
+	} while(1);
+
+#ifndef NDEBUG
+	printf("Aquired control shm\n");
+	fflush(stdout);
+#endif
+
+	struct shm_control_t * shm_c = (struct shm_control_t *) 
+		shared_mmap(shmid, sizeof(struct shm_control_t));
+	shared_end(shm_c);
+
+	return NULL;
+}
+
+void sc_start(int port, int us) {
   assert(!init_check);
   init_check = 1;
   init(&request_list);
 
   s_port = port;
+	use_shared = us;
 
   args = (struct st_args_t *) malloc(sizeof(struct st_args_t));
   args->request_list = &request_list;
@@ -82,6 +114,10 @@ void sc_start(int port) {
   }
 
   pthread_create(&manager, NULL, sc_manager, NULL);
+
+	if(use_shared) {
+		pthread_create(&shm_manager, NULL, sc_shm_manager, NULL);
+	}
   
 }
 

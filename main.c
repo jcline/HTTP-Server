@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 	sa.sa_handler = SIG_IGN;
 	sigaction(SIGPIPE, &sa, NULL);
 
-	sc_start(port);
+	sc_start(port, shared_memory);
 
 	sc_stop();
 	return 0;
