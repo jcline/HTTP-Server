@@ -1,18 +1,16 @@
 #include "include.h"
 
 static struct list_t request_list;
-static struct pt_args_t * args;
+static struct pt_args_t ** args;
 static int s_socket, s_port;
 static struct sockaddr_in s_addr;
 
 static int init_check = 0;
 int s_addr_sz = sizeof(struct sockaddr_in); // !!
-int use_shared = 0;
+static int use_shared = 0, stop = 0;
 
 static pthread_t** pthreads;
 static pthread_t manager;
-
-void ** thread_shm;
 
 void * pc_manager(void* args) {
 
@@ -68,22 +66,29 @@ void pc_start(int port, int us) {
   init(&request_list);
 
   s_port = port;
-
-  args = (struct pt_args_t *) malloc(sizeof(struct pt_args_t));
-  args->request_list = &request_list;
-  args->done = 0;
-	args->use_shared = us;
 	use_shared = us;
+
+  args = (struct pt_args_t **) malloc(sizeof(struct pt_args_t*)*MAX_PROXY_THREADS);
 
   pthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_PROXY_THREADS);
 
-	thread_shm = (void**) malloc(sizeof(void*)*MAX_PROXY_THREADS);
-
   int i;
   for(i = 0; i < MAX_PROXY_THREADS; ++i) {
-      pthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
-      assert(pthreads[i]);
-      pthread_create(pthreads[i], NULL, pt_thread, (void*) args);
+		args[i] = (struct pt_args_t*) malloc(sizeof(struct pt_args_t));
+	
+		args[i]->request_list = &request_list;
+		args[i]->done = 0;
+		args[i]->use_shared = us;
+		if(use_shared) {
+			args[i]->shmid = shared_get(i+0xab, sizeof(struct shm_thread_t) );
+			args[i]->share = shared_mmap(args[i]->shmid, sizeof(struct shm_thread_t));
+		}
+		else
+			args[i]->share = NULL;
+
+		pthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
+		assert(pthreads[i]);
+		pthread_create(pthreads[i], NULL, pt_thread, (void*) args[i]);
   }
 
   pthread_create(&manager, NULL, pc_manager, NULL);
@@ -94,30 +99,35 @@ void pc_stop() {
 	assert(init_check);
 	//join
 //	args->done = 1;
+
+	while(!stop) { sleep(1); }
+	printf("Stopping\n");
+
 	int i;
+	for(i = 0; i < MAX_PROXY_THREADS; ++i) {
+		pthread_kill(*(pthreads[i]), SIGUSR1);
+	}
+
+	printf("Threads signaled\n");
+	request_list.stop = 1;
+	pthread_cond_broadcast(&request_list.work);
+
 	for(i = 0; i < MAX_PROXY_THREADS; ++i) {
 		pthread_join(*(pthreads[i]), NULL);
 	}
-	printf("You should never see this line.\n");
-
 	free(args);
 
 	destroy(&request_list);
 
 	for(i = 0; i < MAX_PROXY_THREADS; ++i) {
 		free(pthreads[i]);
+		free(args[i]);
 	}
 
+	free(args);
 	free(pthreads);
 }
 
 void pc_kill() {
-	if(!init_check)
-		return;
-
-	for(int i = 0; i < MAX_PROXY_THREADS; ++i) {
-		if(use_shared)
-			shared_end(thread_shm[i]);
-		pthread_kill(*(pthreads[i]), SIGKILL);
-	}
+	stop = 1;
 }

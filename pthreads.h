@@ -8,6 +8,9 @@ struct pt_args_t {
 	int done, s_port, use_shared;
 	struct sockaddr_in * s_addr;
 	struct hostent* s_info;
+
+	struct shm_thread_t * share;
+	int shmid;
 };
 
 void * pt_thread(void* args);

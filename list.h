@@ -27,6 +27,7 @@ struct list_t {
 	volatile size_t size;
 	pthread_mutex_t global_lock;
 	pthread_cond_t work;
+	int stop;
 };
 
 

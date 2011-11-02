@@ -5,6 +5,14 @@ size_t MAX_PROXY_THREADS = 10;
 int main(int argc, char** argv) {
 	int port, shared_memory;
 
+	struct sigaction sa;
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
+
+	struct sigaction sac;
+	sac.sa_handler = pc_kill;
+	sigaction(SIGINT, &sac, NULL);
+
 	if( argc < 4 ) {
 		fprintf(stderr, "Not enough arguments!\n");
 		exit(1);
@@ -19,14 +27,6 @@ int main(int argc, char** argv) {
 	else {
 		printf("Running in socket mode\n");
 	}
-
-	struct sigaction sa;
-	sa.sa_handler = SIG_IGN;
-	sigaction(SIGPIPE, &sa, NULL);
-
-	struct sigaction sac;
-	sac.sa_handler = pc_kill;
-	sigaction(SIGPIPE, &sac, NULL);
 
 	pc_start(port, shared_memory);
 	pc_stop();

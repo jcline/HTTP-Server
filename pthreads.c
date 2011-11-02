@@ -1,11 +1,16 @@
 #include "include.h"
 
 extern int errno;
+static int stop = 0;
 
 static const char * const fourzerozero= "HTTP/1.0 400 Bad Request\x0d\x0a";
 static const char * const fourzerofour= "HTTP/1.0 404 Not Found\x0d\x0a";
 static const char * const fivezeroone= "HTTP/1.0 501 Not Implemented\x0d\x0a";
 static const char * const twozerozero= "HTTP/1.0 200 OK\nContent-Type: text/plain\x0d\x0a";
+
+void stop_thread() {
+	stop = 1;
+}
 
 void * pt_thread(void* args) {
 	size_t len400 = strlen(fourzerozero);
@@ -24,6 +29,7 @@ void * pt_thread(void* args) {
 	struct list_t * request_list;
 	struct node_t* restrict val;
 	struct pt_args_t * params;
+	struct shm_thread_t * shared;
 
 	buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 	tmpbuffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
@@ -31,6 +37,7 @@ void * pt_thread(void* args) {
 	params = (struct pt_args_t *) args;
 	request_list = params->request_list;
 	use_shared = params->use_shared;
+	shared = params->share;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -41,11 +48,15 @@ void * pt_thread(void* args) {
 		return 0;
 	}
 
+	struct sigaction sac;
+	sac.sa_handler = stop_thread;
+	sigaction(SIGUSR1, &sac, NULL);
+
 	while( (rv = getaddrinfo("localhost", NULL, &hints, &me)) != 0) {
 		fprintf(stderr,"getaddrinfo failure: %s", gai_strerror(rv));
 	}
 
-	while(1) {
+	while(!stop) {
 		val = pop_front_n(request_list);
 
 		if(!val)
@@ -206,8 +217,16 @@ close:
 		result = NULL;
 	}
 
+	if(shared) {
+		if(shared->aware) {
+			shared->shutdown = 1;
+			while(!shared->ack) usleep(200000);
+		}
+		shared_end(shared);
+		shmctl(params->shmid, IPC_RMID, 0);
+	}
+	printf("Thread shutdown\n");
+
 	return NULL;
 }
-
-
 

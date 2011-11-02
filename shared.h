@@ -10,9 +10,11 @@ struct request_t {
 
 struct shm_thread_t {
 	volatile size_t size;
-	char data[16384]
+	volatile int shutdown, ack, aware;
+	char data[16384];
 	pthread_mutex_t lock;
 	pthread_cond_t sig;
+	key_t key;
 };
 
 struct shm_control_t {
@@ -21,6 +23,8 @@ struct shm_control_t {
 	int init;
 };
 
+int shared_get(key_t key, size_t size);
+struct shm_thread_t * shared_mmap(int id, size_t size);
 void shared_end(const void* shm);
 
 #endif

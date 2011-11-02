@@ -18,6 +18,10 @@ struct node_t* pop_front_n(struct list_t* restrict list) {
 
 	while(!list->size) {
 		pthread_cond_wait(&(list->work), &(list->global_lock));
+		if(list->stop) {
+			pthread_mutex_unlock(&(list->global_lock));
+			return NULL;
+		}
 	}
 
 	struct node_t *restrict ret = list->head;
@@ -90,20 +94,22 @@ void push_back(struct list_t* restrict list, void* restrict a, size_t s,
 
 void destroy(struct list_t* restrict list) {
 	assert(list);
-	assert(list->head);
 
-	struct node_t *it = list->head,
-								*tmp = NULL;
-	for(; it != NULL; it = it->next) {
-		free(tmp);
-		if(it->data) {
-			free(it->data);
+	if(list->head) {
+
+		struct node_t *it = list->head,
+									*tmp = NULL;
+		for(; it != NULL; it = it->next) {
+			free(tmp);
+			if(it->data) {
+				free(it->data);
+			}
+			tmp = it;
 		}
-		tmp = it;
-	}
+		if(tmp)
+			free(tmp);
 
-	if(tmp)
-		free(tmp);
+	}
 
 }
 
