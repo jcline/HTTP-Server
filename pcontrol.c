@@ -12,6 +12,8 @@ int use_shared = 0;
 static pthread_t** pthreads;
 static pthread_t manager;
 
+void ** thread_shm;
+
 void * pc_manager(void* args) {
 
   s_socket = socket(AF_INET,SOCK_STREAM,0);
@@ -75,7 +77,7 @@ void pc_start(int port, int us) {
 
   pthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_PROXY_THREADS);
 
-
+	thread_shm = (void**) malloc(sizeof(void*)*MAX_PROXY_THREADS);
 
   int i;
   for(i = 0; i < MAX_PROXY_THREADS; ++i) {
@@ -110,8 +112,12 @@ void pc_stop() {
 }
 
 void pc_kill() {
+	if(!init_check)
+		return;
+
 	for(int i = 0; i < MAX_PROXY_THREADS; ++i) {
-		shared_end(i);
+		if(use_shared)
+			shared_end(thread_shm[i]);
 		pthread_kill(*(pthreads[i]), SIGKILL);
 	}
 }
