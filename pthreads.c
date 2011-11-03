@@ -180,12 +180,16 @@ void * pt_thread(void* args) {
 			fflush(stdout);
 #endif
 
-		rc = sp_control(filds, c_socket, s_socket, 0);
+		if(local) {
+
+		}
+		else {
+			rc = sp_control(filds, c_socket, s_socket, 0);
 #ifndef NDEBUG
 			printf("send: %d ", rc);
 			fflush(stdout);
 #endif
-
+		}
 		goto close;
 
 fo0:

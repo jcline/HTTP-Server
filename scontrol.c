@@ -83,6 +83,23 @@ void sc_start(int port, int us) {
 			if( shared_manage( &(args[i]->share), &(args[i]->shmid), i+0xab, sizeof(struct shm_thread_t)) )
 				exit(1);
 			args[i]->share->web = 1;
+			if(!args[i]->share->init) {
+				{
+					pthread_mutexattr_t attr;
+					pthread_mutexattr_init(&attr);
+					pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+					pthread_mutex_init(&(args[i]->share->lock), &attr);
+					pthread_mutexattr_destroy(&attr);
+				}
+
+				{
+					pthread_condattr_t attr;
+					pthread_condattr_init(&attr);
+					pthread_condattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+					pthread_cond_init(&(args[i]->share->lock), &attr);
+					pthread_condattr_destroy(&attr);
+				}
+			}
 		}
 		else
 			args[i]->share = NULL;
