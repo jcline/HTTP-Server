@@ -1,11 +1,11 @@
 #include "include.h"
 
 static struct list_t request_list;
-static struct st_args_t * args;
+static struct st_args_t ** args;
 static int s_socket, s_port;
 static struct sockaddr_in s_addr;
 
-static int init_check = 0, use_shared = 0;
+static int init_check = 0, use_shared = 0, stop = 0;
 int s_addr_sz = sizeof(struct sockaddr_in); // !!
 
 static pthread_t** sthreads;
@@ -68,17 +68,28 @@ void sc_start(int port, int us) {
   s_port = port;
 	use_shared = us;
 
-  args = (struct st_args_t *) malloc(sizeof(struct st_args_t));
-  args->request_list = &request_list;
-  args->done = 0;
+  args = (struct st_args_t **) malloc(sizeof(struct st_args_t*)*MAX_SERVE_THREADS);
 
   sthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_SERVE_THREADS);
 
   int i;
   for(i = 0; i < MAX_SERVE_THREADS; ++i) {
-      sthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
-      assert(sthreads[i]);
-      pthread_create(sthreads[i], NULL, st_thread, (void*) args);
+		args[i] = (struct st_args_t*) malloc(sizeof(struct st_args_t));
+	
+		args[i]->request_list = &request_list;
+		args[i]->done = 0;
+		args[i]->use_shared = us;
+		if(use_shared) {
+			if( shared_manage( &(args[i]->share), &(args[i]->shmid), i+0xab, sizeof(struct shm_thread_t)) )
+				exit(1);
+			args[i]->share->web = 1;
+		}
+		else
+			args[i]->share = NULL;
+
+		sthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
+		assert(sthreads[i]);
+		pthread_create(sthreads[i], NULL, st_thread, (void*) args[i]);
   }
 
   pthread_create(&manager, NULL, sc_manager, NULL);
@@ -88,12 +99,25 @@ void sc_start(int port, int us) {
 void sc_stop() {
 	assert(init_check);
 	//join
-//	args->done = 1;
+
+	while(!stop) { sleep(1); }
+
+	printf("Stopping\n");
+
 	int i;
+	for(i = 0; i < MAX_SERVE_THREADS; ++i) {
+		pthread_kill(*(sthreads[i]), SIGUSR1);
+	}
+
+	usleep(50000);
+
+	printf("Threads signaled\n");
+	request_list.stop = 1;
+	pthread_cond_broadcast(&request_list.work);
+
 	for(i = 0; i < MAX_SERVE_THREADS; ++i) {
 		pthread_join(*(sthreads[i]), NULL);
 	}
-	printf("You should never see this line.\n");
 
 	free(args);
 
@@ -101,7 +125,13 @@ void sc_stop() {
 
 	for(i = 0; i < MAX_SERVE_THREADS; ++i) {
 		free(sthreads[i]);
+		free(args[i]);
 	}
 
+	free(args);
 	free(sthreads);
+}
+
+void sc_kill() {
+	stop = 1;
 }

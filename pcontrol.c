@@ -79,8 +79,9 @@ void pc_start(int port, int us) {
 		args[i]->done = 0;
 		args[i]->use_shared = us;
 		if(use_shared) {
-			args[i]->shmid = shared_get(i+0xab, sizeof(struct shm_thread_t) );
-			args[i]->share = shared_mmap(args[i]->shmid, sizeof(struct shm_thread_t));
+			if( shared_manage( &(args[i]->share), &(args[i]->shmid), i+0xab, sizeof(struct shm_thread_t)) )
+				exit(1);
+			args[i]->share->proxy = 1;
 		}
 		else
 			args[i]->share = NULL;
@@ -97,7 +98,6 @@ void pc_start(int port, int us) {
 void pc_stop() {
 	assert(init_check);
 	//join
-//	args->done = 1;
 
 	while(!stop) { sleep(1); }
 	printf("Stopping\n");
@@ -106,6 +106,8 @@ void pc_stop() {
 	for(i = 0; i < MAX_PROXY_THREADS; ++i) {
 		pthread_kill(*(pthreads[i]), SIGUSR1);
 	}
+
+	usleep(50000);
 
 	printf("Threads signaled\n");
 	request_list.stop = 1;

@@ -5,7 +5,8 @@
 
 struct st_args_t {
 	struct list_t * request_list;
-	int done;
+	int done, use_shared, shmid;
+	struct shm_thread_t * share;
 };
 
 void * st_thread(void* args);

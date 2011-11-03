@@ -7,6 +7,14 @@ int main(int argc, char** argv) {
 	int port;
 	size_t shared_memory;
 
+	struct sigaction sa;
+	sa.sa_handler = SIG_IGN;
+	sigaction(SIGPIPE, &sa, NULL);
+
+	struct sigaction sac;
+	sac.sa_handler = sc_kill;
+	sigaction(SIGINT, &sac, NULL);
+
 	if( argc < 4 ) {
 		fprintf(stderr, "Not enough arguments!\n");
 		exit(1);
@@ -24,10 +32,6 @@ int main(int argc, char** argv) {
 
 	char* restrict root_dir = malloc(sizeof(char)*5);
 	strcpy(root_dir,".");
-
-	struct sigaction sa;
-	sa.sa_handler = SIG_IGN;
-	sigaction(SIGPIPE, &sa, NULL);
 
 	sc_start(port, shared_memory);
 

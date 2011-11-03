@@ -1,22 +1,37 @@
 #include "include.h"
 
-int shared_get(key_t key, size_t size) {
-	int rt = shmget(key, size, IPC_CREAT | 
-			S_IRUSR | S_IWUSR);
-	if(rt == -1) {
-		perror("shmget");
-	}
-	return rt;
-}
+extern int errno;
 
-struct shm_thread_t * shared_mmap(int id, size_t size) {
-	void * rp = shmat(id, NULL, 0);
-	if(rp == (void *)-1) {
+int shared_manage(void** restrict ptr, int * restrict id, key_t key, size_t size) {
+	int exist = 0;
+	*id = shmget(key, size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
+	if(*id == -1) {
+		if(errno == EEXIST)
+			exist=1;
+		else {
+			perror("shmget");
+			return -1;
+		}
+	}
+
+	if(exist) {
+		*id = shmget(key, size, IPC_CREAT | S_IRUSR | S_IWUSR);
+		if(*id == -1) {
+			perror("shmget");
+			return -1;
+		}
+	}
+
+	*ptr = shmat(*id, NULL, 0);
+	if(ptr == (void*) -1) {
 		perror("shmat");
+		return -1;
 	}
 
-	memset(rp, 0, size);
-	return (struct shm_thread_t *) rp;
+	if(!exist) 
+		memset(*ptr, 0, size);
+
+	return 0;
 }
 
 void shared_end(const void* shm) {

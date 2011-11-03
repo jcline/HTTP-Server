@@ -7,6 +7,12 @@ static const char * const fourzerofour= "HTTP/1.0 404 Not Found\x0d\x0a";
 static const char * const fivezeroone= "HTTP/1.0 501 Not Implemented\x0d\x0a";
 static const char * const twozerozero= "HTTP/0.9 200 OK\nContent-Type: text/plain\x0d\x0a";
 
+static int stop = 0;
+
+void stop_thread() {
+	stop = 1;
+}
+
 void * st_thread(void* args) {
 	size_t len400 = strlen(fourzerozero);
 	size_t len404 = strlen(fourzerofour);
@@ -21,7 +27,7 @@ void * st_thread(void* args) {
 
 	assert(params->request_list);
 
-	int file = 0, filds[2], local = 0;
+	int file = 0, filds[2], local = 0, use_shared=params->use_shared;
 	struct node_t* restrict val;
 	struct stat statinfo;
 	ssize_t sz = 0;
@@ -30,13 +36,18 @@ void * st_thread(void* args) {
 		*buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 		*tok = NULL, *del = " ";
 	memset(buffer, 0, BUFFER_SIZE);
+	struct shm_thread_t * shared = params->share;
 
 	if(pipe(filds) < 0) {
 		perror("pipe failed");
 		return 0;
 	}
 
-	while(1) { 
+	struct sigaction sac;
+	sac.sa_handler = stop_thread;
+	sigaction(SIGUSR1, &sac, NULL);
+
+	while(!stop) { 
 		val = pop_front_n(request_list);
 
 		if(!val)
@@ -94,7 +105,6 @@ void * st_thread(void* args) {
 			goto fof;
 		++sz;
 
-		//file = getval_n_l(file_list, ptr, sz);
 		if((file = open(ptr, O_RDONLY)) == -1) {
 			perror("");
 			goto fof;
@@ -107,30 +117,26 @@ void * st_thread(void* args) {
 		sz = statinfo.st_size;
 
 		assert(local == 0 || local == 1);
-		switch(local) {
-			case 0:
-				rc = sp_control( filds, c_socket, file, sz); 
-#ifndef NDEBUG 
-				printf("header: %d ", rc);
-				fflush(stdout);
-#endif
-				rc = s_data( c_socket, twozerozero, len200); 
-				if( rc < 0 ) {
-					goto close;
-				}
-#ifndef NDEBUG 
-				printf("data: %d ", rc);
-				fflush(stdout);
-#endif
-				break;
-			default:
-				//TODO: fix fds
-				//rc = sp_control( filds, c_socket, file, sz); 
-				break;
+		if(use_shared && local) {
 		}
+
+		rc = s_data( c_socket, twozerozero, len200); 
 		if( rc < 0 ) {
 			goto close;
 		}
+#ifndef NDEBUG 
+		printf("header: %d ", rc);
+		fflush(stdout);
+#endif
+
+		rc = sp_control( filds, c_socket, file, sz); 
+		if( rc < 0 ) {
+			goto close;
+		}
+#ifndef NDEBUG 
+		printf("data: %d ", rc);
+		fflush(stdout);
+#endif
 		close(file);
 
 		goto close;
@@ -163,22 +169,34 @@ close:
 		free(val->data);
 		free(val);
 
-		if( close(c_socket) == -1 ) {
+		if(use_shared && !local) {
+			if( close(c_socket) == -1 ) {
 #ifndef NDEBUG
-		fprintf(stderr,"Could not close c_socket: %d, %s\n", errno, strerror(errno));
-		fflush(stdout);
-#endif
-		}
-#ifndef NDEBUG
-		else {
-			printf("closed\n");
+			fprintf(stderr,"Could not close c_socket: %d, %s\n", errno, strerror(errno));
 			fflush(stdout);
+#endif
+			}
+#ifndef NDEBUG
+			else {
+				printf("closed\n");
+				fflush(stdout);
+			}
 		}
 #endif
 
 	}
 
 	free(buffer);
+
+	if(shared) {
+		int proxy = shared->proxy;
+		printf("proxy: %d\n", proxy);
+		shared->web = 0;
+		shared_end(shared);
+		if(!proxy)
+			shmctl(params->shmid, IPC_RMID, 0);
+	}
+	printf("Thread shutdown\n");
 
 	return NULL;
 }

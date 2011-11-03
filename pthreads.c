@@ -135,14 +135,12 @@ void * pt_thread(void* args) {
 								if(((struct sockaddr_in *) i->ai_addr)->sin_addr.s_addr == 
 								((struct sockaddr_in *) j->ai_addr)->sin_addr.s_addr)
 									local = 1;
-								goto cont;
 								break;
 							// Untested ipv6 support, theoretically correct
 							case AF_INET6:
 								if(!memcmp( ((struct sockaddr_in6 *) i->ai_addr)->sin6_addr.s6_addr,
 								((struct sockaddr_in6 *) j->ai_addr)->sin6_addr.s6_addr, 16))
 									local = 1;
-								goto cont;
 								break;
 						}
 					}
@@ -162,9 +160,14 @@ void * pt_thread(void* args) {
 			if(!i)
 				goto fof;
 		}
-cont:
-		if(local)
+		if(local) {
 			printf("local req ");
+			int i;
+			memmove(tmpbuffer+strlen("LOCAL_"), tmpbuffer, strlen(tmpbuffer));
+			for(i = 0; i < strlen("LOCAL_"); ++i) {
+				tmpbuffer[i] = "LOCAL_"[i];
+			}
+		}
 
 #ifndef NDEBUG
 		printf("s: %d ", s_socket);
@@ -218,12 +221,12 @@ close:
 	}
 
 	if(shared) {
-		if(shared->aware) {
-			shared->shutdown = 1;
-			while(!shared->ack) usleep(200000);
-		}
+		int web = shared->web;
+		printf("web: %d\n", web);
+		shared->proxy = 0;
 		shared_end(shared);
-		shmctl(params->shmid, IPC_RMID, 0);
+		if(!web)
+			shmctl(params->shmid, IPC_RMID, 0);
 	}
 	printf("Thread shutdown\n");
 
