@@ -21,7 +21,7 @@ void * st_thread(void* args) {
 
 	assert(params->request_list);
 
-	int file = 0, filds[2];
+	int file = 0, filds[2], local = 0;
 	struct node_t* restrict val;
 	struct stat statinfo;
 	ssize_t sz = 0;
@@ -41,6 +41,7 @@ void * st_thread(void* args) {
 
 		if(!val)
 			continue;
+		local = 0;
 
 		c_socket = val->misc;
 
@@ -66,8 +67,12 @@ void * st_thread(void* args) {
 			if(!ptr) // there was no message we can work with
 				goto fo0;
 			// We just want the GET and the path
-			if(strncmp(ptr, "GET", 3))
-				goto foo;
+			if(strcmp(ptr, "GET")) {
+				if(strcmp(ptr, "LOCAL_GET"))
+					goto foo;
+				else
+					local = 1;
+			}
 			
 			ptr = strtok_r(NULL, del, &tok);
 			if(!ptr)
@@ -101,23 +106,31 @@ void * st_thread(void* args) {
 		}
 		sz = statinfo.st_size;
 
-		rc = s_data( c_socket, twozerozero, len200); 
+		assert(local == 0 || local == 1);
+		switch(local) {
+			case 0:
+				rc = sp_control( filds, c_socket, file, sz); 
+#ifndef NDEBUG 
+				printf("header: %d ", rc);
+				fflush(stdout);
+#endif
+				rc = s_data( c_socket, twozerozero, len200); 
+				if( rc < 0 ) {
+					goto close;
+				}
+#ifndef NDEBUG 
+				printf("data: %d ", rc);
+				fflush(stdout);
+#endif
+				break;
+			default:
+				//TODO: fix fds
+				//rc = sp_control( filds, c_socket, file, sz); 
+				break;
+		}
 		if( rc < 0 ) {
 			goto close;
 		}
-#ifndef NDEBUG 
-		printf("header: %d ", rc);
-		fflush(stdout);
-#endif
-
-		rc = sp_control( filds, c_socket, file, sz); 
-		if( rc < 0 ) {
-			goto close;
-		}
-#ifndef NDEBUG 
-		printf("data: %d ", rc);
-		fflush(stdout);
-#endif
 		close(file);
 
 		/*

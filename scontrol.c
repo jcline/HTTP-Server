@@ -60,38 +60,6 @@ void * sc_manager(void* args) {
   return NULL;
 }
 
-void * sc_shm_manager(void* args) {
-	int shmid = 0;
-
-	do {
-		usleep(100000); // sleep for 100ms
-#ifndef NDEBUG
-	printf("Attempting to aquire control shm\n");
-	fflush(stdout);
-#endif
-
-		shmid = shmget(0xaa, sizeof(struct shm_control_t), 0);
-		if(shmid == -1) {
-			if(errno == ENOENT)
-				continue;
-			perror("shmget");
-		}
-		else
-			break;
-	} while(1);
-
-#ifndef NDEBUG
-	printf("Aquired control shm\n");
-	fflush(stdout);
-#endif
-
-	struct shm_control_t * shm_c = (struct shm_control_t *) 
-		shared_mmap(shmid, sizeof(struct shm_control_t));
-	shared_end(shm_c);
-
-	return NULL;
-}
-
 void sc_start(int port, int us) {
   assert(!init_check);
   init_check = 1;
@@ -115,10 +83,6 @@ void sc_start(int port, int us) {
 
   pthread_create(&manager, NULL, sc_manager, NULL);
 
-	if(use_shared) {
-		pthread_create(&shm_manager, NULL, sc_shm_manager, NULL);
-	}
-  
 }
 
 void sc_stop() {
