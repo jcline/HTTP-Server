@@ -24,6 +24,7 @@ void * pt_thread(void* args) {
 	char * restrict buffer, * restrict tmpbuffer, *ptr, *pptr;
 	int c_socket, s_socket = 0, filds[2], rv = 0, use_shared = 0, local = 0;
 	size_t BUFFER_SIZE = 500;
+	size_t TMPBUFFER_SIZE = 500;
 	ssize_t rc = 0;
 	struct addrinfo hints, *result = NULL, *me = NULL;
 	struct list_t * request_list;
@@ -33,6 +34,9 @@ void * pt_thread(void* args) {
 
 	buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 	tmpbuffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
+
+	memset(buffer, 0, BUFFER_SIZE);
+	memset(tmpbuffer, 0, TMPBUFFER_SIZE);
 
 	params = (struct pt_args_t *) args;
 	request_list = params->request_list;
@@ -114,7 +118,7 @@ void * pt_thread(void* args) {
 			fflush(stdout);
 #endif
 
-			ptr = strtok_r(NULL, "\0", &tok);
+			ptr = strtok_r(NULL, "\x0a", &tok);
 			if(!ptr)
 				goto fof;
 			strcat(tmpbuffer, " /");
@@ -160,7 +164,7 @@ void * pt_thread(void* args) {
 			if(!i)
 				goto fof;
 		}
-		if(local) {
+		if(use_shared && local) {
 			printf("local req ");
 			int i;
 			memmove(tmpbuffer+strlen("LOCAL_"), tmpbuffer, strlen(tmpbuffer));
@@ -176,12 +180,20 @@ void * pt_thread(void* args) {
 
 		rc = s_data(s_socket, tmpbuffer, rc);
 #ifndef NDEBUG
-			printf("req: %d ", rc);
-			fflush(stdout);
+		printf("req: %d ", rc);
+		fflush(stdout);
 #endif
 
-		if(local) {
+		if(use_shared && local) {
+			pthread_mutex_lock(&shared->lock);
+			while(!shared->size)
+				pthread_cond_wait(&shared->sig, &shared->lock);
 
+			memcpy(buffer, shared->data, shared->size);
+			s_data(c_socket, buffer, shared->size);
+			shared->done = 0;
+			shared->size = 0;
+			pthread_mutex_unlock(&shared->lock);
 		}
 		else {
 			rc = sp_control(filds, c_socket, s_socket, 0);
@@ -222,9 +234,10 @@ close:
 		if(result)
 			freeaddrinfo(result);
 		result = NULL;
+		free(val->data);
 	}
 
-	if(shared) {
+	if(use_shared) {
 		int web = shared->web;
 		printf("web: %d\n", web);
 		shared->proxy = 0;
@@ -232,6 +245,11 @@ close:
 		if(!web)
 			shmctl(params->shmid, IPC_RMID, 0);
 	}
+
+	freeaddrinfo(me);
+	free(buffer);
+	free(tmpbuffer);
+
 	printf("Thread shutdown\n");
 
 	return NULL;

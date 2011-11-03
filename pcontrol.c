@@ -43,7 +43,7 @@ void * pc_manager(void* args) {
   char buffer[1];
 
   printf("listening\n");
-  while(1) {
+  while(!stop) {
     c_socket = accept( s_socket, NULL, (socklen_t *) &s_addr_sz);
 		if(c_socket == -1) {
 			perror("accept error");
@@ -53,8 +53,10 @@ void * pc_manager(void* args) {
     printf("new connection\t%d\n", c_socket);
 #endif
 
-		push_back(&request_list, buffer, 1, NULL, c_socket);
+		push_back(&request_list, buffer, 0, NULL, c_socket);
   }
+
+	close(s_socket);
 
   return NULL;
 }
@@ -86,18 +88,20 @@ void pc_start(int port, int us) {
 				{
 					pthread_mutexattr_t attr;
 					pthread_mutexattr_init(&attr);
-					pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-					pthread_mutex_init(&(args[i]->share->lock), &attr);
+					if(pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) perror("shm_mutex");
+					if(pthread_mutex_init(&(args[i]->share->lock), &attr)) perror("shm_mutex_init");
 					pthread_mutexattr_destroy(&attr);
 				}
 
 				{
 					pthread_condattr_t attr;
 					pthread_condattr_init(&attr);
-					pthread_condattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-					pthread_cond_init(&(args[i]->share->lock), &attr);
+					if(pthread_condattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) perror("shm_cond");
+					if(pthread_cond_init(&(args[i]->share->lock), &attr)) perror("shm_cond_init");
 					pthread_condattr_destroy(&attr);
 				}
+
+				args[i]->share->init = 1;
 			}
 		}
 		else
@@ -117,7 +121,10 @@ void pc_stop() {
 	//join
 
 	while(!stop) { sleep(1); }
+
 	printf("Stopping\n");
+
+	pthread_kill(&manager, SIGINT);
 
 	int i;
 	for(i = 0; i < MAX_PROXY_THREADS; ++i) {
@@ -133,7 +140,6 @@ void pc_stop() {
 	for(i = 0; i < MAX_PROXY_THREADS; ++i) {
 		pthread_join(*(pthreads[i]), NULL);
 	}
-	free(args);
 
 	destroy(&request_list);
 

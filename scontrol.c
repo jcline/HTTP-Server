@@ -87,18 +87,20 @@ void sc_start(int port, int us) {
 				{
 					pthread_mutexattr_t attr;
 					pthread_mutexattr_init(&attr);
-					pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-					pthread_mutex_init(&(args[i]->share->lock), &attr);
+					if(pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) perror("shm_mutex");
+					if(pthread_mutex_init(&(args[i]->share->lock), &attr)) perror("shm_mutex_init");
 					pthread_mutexattr_destroy(&attr);
 				}
 
 				{
 					pthread_condattr_t attr;
 					pthread_condattr_init(&attr);
-					pthread_condattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-					pthread_cond_init(&(args[i]->share->lock), &attr);
+					if(pthread_condattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) perror("shm_cond");
+					if(pthread_cond_init(&(args[i]->share->lock), &attr)) perror("shm_cond_init");
 					pthread_condattr_destroy(&attr);
 				}
+
+				args[i]->share->init = 1;
 			}
 		}
 		else
@@ -135,8 +137,6 @@ void sc_stop() {
 	for(i = 0; i < MAX_SERVE_THREADS; ++i) {
 		pthread_join(*(sthreads[i]), NULL);
 	}
-
-	free(args);
 
 	destroy(&request_list);
 

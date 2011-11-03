@@ -36,5 +36,7 @@ int main(int argc, char** argv) {
 	sc_start(port, shared_memory);
 
 	sc_stop();
+
+	free(root_dir);
 	return 0;
 }

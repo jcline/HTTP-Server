@@ -5,8 +5,8 @@
 
 struct shm_thread_t {
 	volatile size_t size;
-	volatile int web, proxy, init;
-	char data[16384];
+	volatile int web, proxy, init, done;
+	char data[1024*1024];
 	pthread_mutex_t lock;
 	pthread_cond_t sig;
 	key_t key;

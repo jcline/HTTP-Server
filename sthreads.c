@@ -28,6 +28,7 @@ void * st_thread(void* args) {
 	assert(params->request_list);
 
 	int file = 0, filds[2], local = 0, use_shared=params->use_shared;
+	FILE* fptr = NULL;
 	struct node_t* restrict val;
 	struct stat statinfo;
 	ssize_t sz = 0;
@@ -65,6 +66,7 @@ void * st_thread(void* args) {
 		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
 #ifndef NDEBUG 
 		printf("read: %d %s ", rc, buffer);
+		fflush(stdout);
 #endif
 		if(rc == -1) {
 			goto close;
@@ -105,38 +107,51 @@ void * st_thread(void* args) {
 			goto fof;
 		++sz;
 
+		if(stat(ptr, &statinfo) == -1) {
+			perror("Could not stat");
+			goto fof;
+		}
 		if((file = open(ptr, O_RDONLY)) == -1) {
 			perror("");
 			goto fof;
 		}
 
-		if(stat(ptr, &statinfo) == -1) {
-			perror("Could not stat");
-			goto fof;
-		}
 		sz = statinfo.st_size;
 
 		assert(local == 0 || local == 1);
 		if(use_shared && local) {
+			pthread_mutex_lock(&shared->lock);
+			fptr = fdopen(file, "r");
+			memcpy(shared->data, twozerozero, len200);
+			shared->size = len200;
+		}
+		else {
+			rc = s_data( c_socket, twozerozero, len200); 
+			if( rc < 0 ) {
+				goto close;
+			}
+#ifndef NDEBUG 
+			printf("header: %d ", rc);
+			fflush(stdout);
+#endif
 		}
 
-		rc = s_data( c_socket, twozerozero, len200); 
-		if( rc < 0 ) {
-			goto close;
+		if(local) {
+			shared->size += fread(shared->data + shared->size, sizeof(char), sz, fptr);
+			shared->done = 1;
+			pthread_mutex_unlock(&shared->lock);
+			pthread_cond_signal(&shared->sig);
 		}
+		else {
+			rc = sp_control( filds, c_socket, file, sz); 
+			if( rc < 0 ) {
+				goto close;
+			}
 #ifndef NDEBUG 
-		printf("header: %d ", rc);
-		fflush(stdout);
+			printf("data: %d ", rc);
+			fflush(stdout);
 #endif
-
-		rc = sp_control( filds, c_socket, file, sz); 
-		if( rc < 0 ) {
-			goto close;
 		}
-#ifndef NDEBUG 
-		printf("data: %d ", rc);
-		fflush(stdout);
-#endif
 		close(file);
 
 		goto close;
@@ -188,7 +203,7 @@ close:
 
 	free(buffer);
 
-	if(shared) {
+	if(use_shared) {
 		int proxy = shared->proxy;
 		printf("proxy: %d\n", proxy);
 		shared->web = 0;
