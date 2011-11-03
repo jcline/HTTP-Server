@@ -133,13 +133,6 @@ void * st_thread(void* args) {
 		}
 		close(file);
 
-		/*
-		rc = s_data( c_socket, endtrans, 2);
-#ifndef NDEBUG 
-		printf("end: %d ", rc);
-		fflush(stdout);
-#endif
-		*/
 		goto close;
 
 fo0:
