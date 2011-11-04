@@ -108,6 +108,7 @@ void * pt_thread(void* args) {
 			pptr = strtok_r(NULL, sdel, &tok);
 			if(!ptr)
 				goto fof;
+
 			if( (rv = getaddrinfo(ptr, pptr, &hints, &result)) != 0) {
 				fprintf(stderr,"getaddrinfo failure: %s", gai_strerror(rv));
 				goto fof;
@@ -118,7 +119,7 @@ void * pt_thread(void* args) {
 			fflush(stdout);
 #endif
 
-			ptr = strtok_r(NULL, "\x0a", &tok);
+			ptr = strtok_r(NULL, "\0", &tok);
 			if(!ptr)
 				goto fof;
 			strcat(tmpbuffer, " /");
@@ -139,16 +140,19 @@ void * pt_thread(void* args) {
 								if(((struct sockaddr_in *) i->ai_addr)->sin_addr.s_addr == 
 								((struct sockaddr_in *) j->ai_addr)->sin_addr.s_addr)
 									local = 1;
+								goto cont;
 								break;
 							// Untested ipv6 support, theoretically correct
 							case AF_INET6:
 								if(!memcmp( ((struct sockaddr_in6 *) i->ai_addr)->sin6_addr.s6_addr,
 								((struct sockaddr_in6 *) j->ai_addr)->sin6_addr.s6_addr, 16))
 									local = 1;
+								goto cont;
 								break;
 						}
 					}
 				}
+cont:
 				// Try to connect to entry for getaddrinfo lookup
 				if( (s_socket = socket(i->ai_family, i->ai_socktype, i->ai_protocol)) == -1) {
 					continue;
@@ -166,8 +170,11 @@ void * pt_thread(void* args) {
 		}
 		if(use_shared && local) {
 			printf("local req ");
-			int i;
-			memmove(tmpbuffer+strlen("LOCAL_"), tmpbuffer, strlen(tmpbuffer));
+			int i, j;
+			for(i = strlen(tmpbuffer)+strlen("LOCAL_"), j=i-strlen("LOCAL_");
+					i >= strlen("LOCAL_"); --i, --j) {
+				tmpbuffer[i] = tmpbuffer[j];
+			}
 			for(i = 0; i < strlen("LOCAL_"); ++i) {
 				tmpbuffer[i] = "LOCAL_"[i];
 			}
@@ -188,7 +195,14 @@ void * pt_thread(void* args) {
 			pthread_mutex_lock(&shared->lock);
 			while(!shared->size)
 				pthread_cond_wait(&shared->sig, &shared->lock);
+			printf("locked ");
 
+			if(shared->size > BUFFER_SIZE) {
+				buffer = realloc(buffer, shared->size);
+				if(!buffer) {
+					exit(1);
+				}
+			}
 			memcpy(buffer, shared->data, shared->size);
 			s_data(c_socket, buffer, shared->size);
 			shared->done = 0;

@@ -124,6 +124,10 @@ void * st_thread(void* args) {
 			fptr = fdopen(file, "r");
 			memcpy(shared->data, twozerozero, len200);
 			shared->size = len200;
+#ifndef NDEBUG
+			printf("header: %d ", shared->size);
+			fflush(stdout);
+#endif
 		}
 		else {
 			rc = s_data( c_socket, twozerozero, len200); 
@@ -184,21 +188,12 @@ close:
 		free(val->data);
 		free(val);
 
-		if(use_shared && !local) {
-			if( close(c_socket) == -1 ) {
+		if( close(c_socket) == -1 ) {
 #ifndef NDEBUG
-			fprintf(stderr,"Could not close c_socket: %d, %s\n", errno, strerror(errno));
-			fflush(stdout);
+		fprintf(stderr,"Could not close c_socket: %d, %s\n", errno, strerror(errno));
+		fflush(stdout);
 #endif
-			}
-#ifndef NDEBUG
-			else {
-				printf("closed\n");
-				fflush(stdout);
-			}
 		}
-#endif
-
 	}
 
 	free(buffer);
