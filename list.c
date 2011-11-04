@@ -1,5 +1,54 @@
 #include "list.h"
 
+void* pop_front_c(struct list_t* restrict list, int* pass, void (*callback)(void)) {
+	struct node_t* ret = pop_front_n_c(list, pass, callback);
+	if(ret) {
+		void* ret_data = ret->data;
+		free(ret->label);
+		free(ret);
+		return ret_data;
+	}
+	else
+		return NULL;
+}
+
+struct node_t* pop_front_n_c(struct list_t* restrict list, int* pass, void (*callback)(void)) {
+	assert(list);
+	pthread_mutex_lock(&(list->global_lock));
+
+	while(!list->size) {
+		pthread_cond_wait(&(list->work), &(list->global_lock));
+		if(list->stop) {
+			pthread_mutex_unlock(&(list->global_lock));
+			return NULL;
+		}
+		if(*pass) {
+			(*callback)();
+			return NULL;
+		}
+	}
+
+	struct node_t *restrict ret = list->head;
+
+	switch(list->size) {
+		case 0:
+			break;
+		case 1:
+			list->tail = NULL;
+			list->head = NULL;
+			--list->size;
+			break;
+		default:
+			list->head = ret->next;
+			list->head->prev = NULL;
+			--list->size;
+			break;
+	}
+
+	pthread_mutex_unlock(&(list->global_lock));
+	return ret;
+}
+
 void* pop_front(struct list_t* restrict list) {
 	struct node_t* ret = pop_front_n(list);
 	if(ret) {

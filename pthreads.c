@@ -192,31 +192,36 @@ cont:
 #endif
 
 		if(use_shared && local) {
-			pthread_mutex_lock(&shared->lock);
+			/*pthread_mutex_lock(&shared->lock);
 			while(!shared->safe)
 				pthread_cond_wait(&shared->sig, &shared->lock);
+				*/
 
-			if(shared->size > BUFFER_SIZE) {
-				buffer = realloc(buffer, shared->size);
-				if(!buffer) {
-					exit(1);
+			while(!stop) {
+				while(!shared->safe && !stop);
+
+				rc = s_data(c_socket, shared->data, shared->size);
+
+				shared->safe = 0;
+				shared->size = 0;
+				//pthread_mutex_unlock(&shared->lock);
+#ifndef NDEBUG
+				printf("send: %d ", rc);
+				fflush(stdout);
+#endif
+				if(shared->done) {
+					shared->done = 0;
+					break;
 				}
-				BUFFER_SIZE = shared->size;
 			}
-
-			rc = s_data(c_socket, shared->data, shared->size);
-
-			shared->done = 0;
-			shared->size = 0;
-			pthread_mutex_unlock(&shared->lock);
 		}
 		else {
 			rc = sp_control(filds, c_socket, s_socket, 0);
-		}
 #ifndef NDEBUG
-		printf("send: %d ", rc);
-		fflush(stdout);
+			printf("send: %d ", rc);
+			fflush(stdout);
 #endif
+		}
 		goto close;
 
 fo0:

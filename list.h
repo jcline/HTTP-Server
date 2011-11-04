@@ -31,25 +31,16 @@ struct list_t {
 };
 
 
-void push_front(struct list_t* restrict list, void* restrict a, size_t s, 
-    char* restrict label, int misc);
 void push_back(struct list_t* restrict list, void* restrict a, size_t s,
     char* restrict label, int misc);
+struct node_t* pop_front_n_c(struct list_t* restrict list, int* pass, void (*callback)(void));
+void* pop_front_c(struct list_t* restrict list, int* pass, void (*callback)(void));
 
 void* pop_front(struct list_t* restrict list);
-void* pop_back(struct list_t* restrict list);
 struct node_t* pop_front_n(struct list_t* restrict list);
 struct node_t* pop_back_n(struct list_t* restrict list);
 
-void build_cache(struct list_t* restrict list);
 void destroy(struct list_t* restrict list);
 void init(struct list_t* restrict list);
-
-struct node_t* cache_lookup(struct list_t* restrict list, char * restrict key);
-struct node_t* getval_n_l(struct list_t* restrict list, char * restrict label, size_t i);
-struct node_t* getval_n(struct list_t* restrict list, size_t i);
-void* getval(struct list_t* restrict list, size_t i);
-//void replace(struct list_t* restrict list, size_t i, void* restrict a, size_t s);
-
 
 #endif

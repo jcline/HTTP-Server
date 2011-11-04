@@ -65,7 +65,7 @@ void * st_thread(void* args) {
 		// Read until theres nothing left
 		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
 #ifndef NDEBUG 
-		printf("read: %d %s ", rc, buffer);
+		printf("read: %d ", rc);
 		fflush(stdout);
 #endif
 		if(rc == -1) {
@@ -120,9 +120,12 @@ void * st_thread(void* args) {
 
 		assert(local == 0 || local == 1);
 		if(use_shared && local) {
-			pthread_mutex_lock(&shared->lock);
+			//pthread_mutex_lock(&shared->lock);
 			fptr = fdopen(file, "r");
-			memcpy(shared->data, twozerozero, len200);
+			while(shared->safe && !stop);
+			shared->size = 0;
+			shared->done = 0;
+			memmove(shared->data, twozerozero, len200);
 			shared->size = len200;
 #ifndef NDEBUG
 			printf("header: %d ", shared->size);
@@ -141,11 +144,26 @@ void * st_thread(void* args) {
 		}
 
 		if(use_shared && local) {
-			shared->size += fread(shared->data + shared->size, sizeof(char), sz, fptr);
+			size_t s = (sz >= 1024*1024) ? (1024*1024)-1 : sz;
+			size_t tot = 0;
+			while(!feof(fptr)) {
+				while(shared->safe && !stop);
+				if(shared->size == s){
+					sz -= s;
+					s = (sz >= 1024*1024) ? (1024*1024)-1 : sz;
+					shared->size=0;
+					shared->safe = 1;
+					while(shared->safe && !stop);
+				}
+				shared->size += fread(shared->data + shared->size, sizeof(char), s, fptr);
+				if(ferror(fptr))
+					fprintf(stderr, "fread failed");
+			}
 			shared->done = 1;
-			pthread_mutex_unlock(&shared->lock);
+			//pthread_mutex_unlock(&shared->lock);
 			shared->safe = 1;
-			pthread_cond_signal(&(shared->sig));
+			//pthread_cond_signal(&(shared->sig));
+			fclose(fptr);
 		}
 		else {
 			rc = sp_control( filds, c_socket, file, sz); 
@@ -162,27 +180,66 @@ void * st_thread(void* args) {
 		goto close;
 
 fo0:
-		rc = s_data(c_socket, fourzerozero, len400);
+		if(use_shared && local) {
+			while(shared->safe && !stop);
+			memmove(shared->data, fourzerozero, len400);
+			shared->size = len400;
+			shared->safe = 1;
+			shared->done = 1;
 #ifndef NDEBUG 
-		printf("400: %d ", rc);
-		fflush(stdout);
+			printf("400: %d ", len400);
+			fflush(stdout);
 #endif
+		}
+		else {
+			rc = s_data(c_socket, fourzerozero, len400);
+#ifndef NDEBUG 
+			printf("400: %d ", rc);
+			fflush(stdout);
+#endif
+		}
 		goto close;
 
 fof:
-		rc = s_data(c_socket, fourzerofour, len404);
+		if(use_shared && local) {
+			while(shared->safe && !stop);
+			memmove(shared->data, fourzerofour, len404);
+			shared->size = len404;
+			shared->safe = 1;
+			shared->done = 1;
 #ifndef NDEBUG 
-		printf("404: %d ", rc);
-		fflush(stdout);
+			printf("404: %d ", len404);
+			fflush(stdout);
 #endif
+		}
+		else {
+			rc = s_data(c_socket, fourzerofour, len404);
+#ifndef NDEBUG 
+			printf("404: %d ", rc);
+			fflush(stdout);
+#endif
+		}
 		goto close;
 
 foo:
-		rc = s_data(c_socket, fivezeroone, len501);
+		if(use_shared && local) {
+			while(shared->safe && !stop);
+			memmove(shared->data, fivezeroone, len501);
+			shared->size = len501;
+			shared->safe = 1;
+			shared->done = 1;
 #ifndef NDEBUG 
-		printf("501: %d ", rc);
-		fflush(stdout);
+			printf("501: %d ", len501);
+			fflush(stdout);
 #endif
+		}
+		else {
+			rc = s_data(c_socket, fivezeroone, len501);
+#ifndef NDEBUG 
+			printf("501: %d ", rc);
+			fflush(stdout);
+#endif
+		}
 		goto close;
 
 close:
