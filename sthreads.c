@@ -120,7 +120,7 @@ void * st_thread(void* args) {
 
 		assert(local == 0 || local == 1);
 		if(use_shared && local) {
-			pthread_mutex_lock(&shared->lock);
+			//pthread_mutex_lock(&shared->lock);
 			fptr = fdopen(file, "r");
 			memcpy(shared->data, twozerozero, len200);
 			shared->size = len200;
@@ -140,10 +140,11 @@ void * st_thread(void* args) {
 #endif
 		}
 
-		if(local) {
+		if(use_shared && local) {
 			shared->size += fread(shared->data + shared->size, sizeof(char), sz, fptr);
 			shared->done = 1;
-			pthread_mutex_unlock(&shared->lock);
+			//pthread_mutex_unlock(&shared->lock);
+			shared->safe = 1;
 			pthread_cond_signal(&shared->sig);
 		}
 		else {

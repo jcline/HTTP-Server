@@ -73,6 +73,7 @@ void * pt_thread(void* args) {
 		fflush(stdout);
 #endif
 
+		memset(buffer, 0, BUFFER_SIZE);
 
 		// Read until theres nothing left
 		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
@@ -123,7 +124,7 @@ void * pt_thread(void* args) {
 			if(!ptr)
 				goto fof;
 			strcat(tmpbuffer, " /");
-			strcat(tmpbuffer, ptr);
+			strncat(tmpbuffer, ptr, TMPBUFFER_SIZE-strlen(tmpbuffer)-1);
 
 		}
 
@@ -169,7 +170,6 @@ cont:
 				goto fof;
 		}
 		if(use_shared && local) {
-			printf("local req ");
 			int i, j;
 			for(i = strlen(tmpbuffer)+strlen("LOCAL_"), j=i-strlen("LOCAL_");
 					i >= strlen("LOCAL_"); --i, --j) {
@@ -193,18 +193,20 @@ cont:
 
 		if(use_shared && local) {
 			pthread_mutex_lock(&shared->lock);
-			while(!shared->size)
+			while(!shared->safe)
 				pthread_cond_wait(&shared->sig, &shared->lock);
-			printf("locked ");
 
 			if(shared->size > BUFFER_SIZE) {
 				buffer = realloc(buffer, shared->size);
 				if(!buffer) {
 					exit(1);
 				}
+				BUFFER_SIZE = shared->size;
 			}
+
 			memcpy(buffer, shared->data, shared->size);
 			s_data(c_socket, buffer, shared->size);
+
 			shared->done = 0;
 			shared->size = 0;
 			pthread_mutex_unlock(&shared->lock);
