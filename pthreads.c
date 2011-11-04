@@ -204,8 +204,7 @@ cont:
 				BUFFER_SIZE = shared->size;
 			}
 
-			memcpy(buffer, shared->data, shared->size);
-			s_data(c_socket, buffer, shared->size);
+			rc = s_data(c_socket, shared->data, shared->size);
 
 			shared->done = 0;
 			shared->size = 0;
@@ -213,11 +212,11 @@ cont:
 		}
 		else {
 			rc = sp_control(filds, c_socket, s_socket, 0);
-#ifndef NDEBUG
-			printf("send: %d ", rc);
-			fflush(stdout);
-#endif
 		}
+#ifndef NDEBUG
+		printf("send: %d ", rc);
+		fflush(stdout);
+#endif
 		goto close;
 
 fo0:
