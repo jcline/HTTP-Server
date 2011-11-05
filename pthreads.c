@@ -22,7 +22,7 @@ void * pt_thread(void* args) {
 		* restrict sdel = ":/";
 	char * tok = NULL; 
 	char * restrict buffer, * restrict tmpbuffer, *ptr, *pptr;
-	int c_socket, s_socket = 0, filds[2], rv = 0, use_shared = 0, local = 0;
+	int c_socket, s_socket = 0, filds[2], rv = 0, use_shared = 0, local = 0, id = 0;
 	size_t BUFFER_SIZE = 500;
 	size_t TMPBUFFER_SIZE = 500;
 	ssize_t rc = 0;
@@ -42,6 +42,7 @@ void * pt_thread(void* args) {
 	request_list = params->request_list;
 	use_shared = params->use_shared;
 	shared = params->share;
+	id = params->id;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -170,7 +171,16 @@ cont:
 				goto fof;
 		}
 		if(use_shared && local) {
-			int i, j;
+			int i, j, rt;
+			rt = sprintf(buffer, "%d ", id);
+			printf("id: %d ", id);
+			for(i = strlen(tmpbuffer)+rt, j=i-rt;
+					j >= rt+2; --i, --j) {
+				tmpbuffer[i] = tmpbuffer[j];
+			}
+			for(i = 4, j = 0; j < rt; ++i, ++j) {
+				tmpbuffer[i] = buffer[j];
+			}
 			for(i = strlen(tmpbuffer)+strlen("LOCAL_"), j=i-strlen("LOCAL_");
 					i >= strlen("LOCAL_"); --i, --j) {
 				tmpbuffer[i] = tmpbuffer[j];
@@ -178,6 +188,7 @@ cont:
 			for(i = 0; i < strlen("LOCAL_"); ++i) {
 				tmpbuffer[i] = "LOCAL_"[i];
 			}
+			rc = strlen(tmpbuffer);
 		}
 
 #ifndef NDEBUG
@@ -249,6 +260,10 @@ foo:
 		goto close;
 
 close:
+#ifndef NDEBUG 
+		printf("closing");
+		fflush(stdout);
+#endif
 		close(c_socket);
 		close(s_socket);
 		if(result)

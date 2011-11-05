@@ -80,6 +80,7 @@ void pc_start(int port, int us) {
 		args[i]->request_list = &request_list;
 		args[i]->done = 0;
 		args[i]->use_shared = us;
+		args[i]->id = i;
 		if(use_shared) {
 			if( shared_manage( &(args[i]->share), &(args[i]->shmid), i+0xab, sizeof(struct shm_thread_t)) )
 				exit(1);
@@ -124,7 +125,7 @@ void pc_stop() {
 
 	printf("Stopping\n");
 
-	pthread_kill(&manager, SIGINT);
+	pthread_kill(manager, SIGINT);
 
 	int i;
 	for(i = 0; i < MAX_PROXY_THREADS; ++i) {

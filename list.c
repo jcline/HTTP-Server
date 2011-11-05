@@ -1,7 +1,7 @@
 #include "list.h"
 
-void* pop_front_c(struct list_t* restrict list, int* pass, void (*callback)(void)) {
-	struct node_t* ret = pop_front_n_c(list, pass, callback);
+void* pop_front_c(struct list_t* restrict list, int* pass) {
+	struct node_t* ret = pop_front_n_c(list, pass);
 	if(ret) {
 		void* ret_data = ret->data;
 		free(ret->label);
@@ -12,7 +12,7 @@ void* pop_front_c(struct list_t* restrict list, int* pass, void (*callback)(void
 		return NULL;
 }
 
-struct node_t* pop_front_n_c(struct list_t* restrict list, int* pass, void (*callback)(void)) {
+struct node_t* pop_front_n_c(struct list_t* restrict list, int* pass) {
 	assert(list);
 	pthread_mutex_lock(&(list->global_lock));
 
@@ -22,8 +22,8 @@ struct node_t* pop_front_n_c(struct list_t* restrict list, int* pass, void (*cal
 			pthread_mutex_unlock(&(list->global_lock));
 			return NULL;
 		}
+		printf("list.c: %d ", *pass);
 		if(*pass) {
-			(*callback)();
 			return NULL;
 		}
 	}

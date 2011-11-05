@@ -79,6 +79,7 @@ void sc_start(int port, int us) {
 		args[i]->request_list = &request_list;
 		args[i]->done = 0;
 		args[i]->use_shared = us;
+		args[i]->id = i;
 		if(use_shared) {
 			if( shared_manage( &(args[i]->share), &(args[i]->shmid), i+0xab, sizeof(struct shm_thread_t)) )
 				exit(1);
@@ -151,4 +152,9 @@ void sc_stop() {
 
 void sc_kill() {
 	stop = 1;
+}
+
+void sc_signal(int id, int signal) {
+	printf("signaling\n");
+	pthread_kill(*(sthreads[id]), SIGUSR2);
 }

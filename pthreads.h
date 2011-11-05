@@ -10,7 +10,7 @@ struct pt_args_t {
 	struct hostent* s_info;
 
 	struct shm_thread_t * share;
-	int shmid;
+	int shmid, id;
 };
 
 void * pt_thread(void* args);

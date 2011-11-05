@@ -5,12 +5,31 @@ extern int errno;
 static const char * const fourzerozero= "HTTP/1.0 400 Bad Request\x0d\x0a";
 static const char * const fourzerofour= "HTTP/1.0 404 Not Found\x0d\x0a";
 static const char * const fivezeroone= "HTTP/1.0 501 Not Implemented\x0d\x0a";
-static const char * const twozerozero= "HTTP/0.9 200 OK\nContent-Type: text/plain\x0d\x0a";
+static const char * const twozerozero= "HTTP/1.0 200 OK\nContent-Type: text/plain\nContent-Length: ";
+
+struct t_msg{
+	volatile int pass;
+	char req[500];
+	int socket;
+};
+
+
+struct t_arr{
+	struct t_msg * arr;
+};
+	
+static struct t_arr comm;
 
 static int stop = 0;
+static volatile int initialized = 0;
+static int garbage = 0;
 
 void stop_thread() {
 	stop = 1;
+}
+
+void pass_wait() {
+	garbage = 0;
 }
 
 void * st_thread(void* args) {
@@ -19,6 +38,7 @@ void * st_thread(void* args) {
 	size_t len501 = strlen(fivezeroone);
 	size_t len200 = strlen(twozerozero);
 	size_t BUFFER_SIZE = 500;
+	size_t TMPBUFFER_SIZE = 500;
 	assert(args);
 
 	struct st_args_t * params = (struct st_args_t *) args;
@@ -27,7 +47,7 @@ void * st_thread(void* args) {
 
 	assert(params->request_list);
 
-	int file = 0, filds[2], local = 0, use_shared=params->use_shared;
+	int file = 0, filds[2], local = 0, use_shared=params->use_shared, id = params->id, pass=0, req_id = 0;
 	FILE* fptr = NULL;
 	struct node_t* restrict val;
 	struct stat statinfo;
@@ -35,8 +55,10 @@ void * st_thread(void* args) {
 	int c_socket, rc;
 	char* ptr = NULL, *endtrans = "\x0d\x0a",
 		*buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
+		*tmpbuffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
 		*tok = NULL, *del = " ";
 	memset(buffer, 0, BUFFER_SIZE);
+	memset(tmpbuffer, 0, BUFFER_SIZE);
 	struct shm_thread_t * shared = params->share;
 
 	if(pipe(filds) < 0) {
@@ -44,18 +66,43 @@ void * st_thread(void* args) {
 		return 0;
 	}
 
+	if(id == 0) {
+		comm.arr = (struct t_msg*) malloc(sizeof(struct t_msg)*MAX_SERVE_THREADS);
+		initialized = 1;
+	}
+	while(!initialized);
+	comm.arr[id].pass = 0;
+	memset(comm.arr[id].req, 0, 500);
+
 	struct sigaction sac;
 	sac.sa_handler = stop_thread;
 	sigaction(SIGUSR1, &sac, NULL);
 
-	while(!stop) { 
-		val = pop_front_n(request_list);
+	struct sigaction sac2;
+	sac2.sa_handler = pass_wait;
+	sigaction(SIGUSR2, &sac2, NULL);
 
-		if(!val)
-			continue;
+	while(!stop) { 
+		if(!comm.arr[id].pass)
+			val = pop_front_n_c(request_list, &comm.arr[id].pass);
+		else
+			pass = 1;
+
+		printf("%d ", comm.arr[id].pass);
+
+		if(!val) {
+			if(comm.arr[id].pass) {
+				pass=1;
+			}
+			else 
+				continue;
+		}
 		local = 0;
 
-		c_socket = val->misc;
+		if(pass)
+			c_socket = comm.arr[id].socket;
+		else 
+			c_socket = val->misc;
 
 #ifndef NDEBUG 
 		printf("%d: ", c_socket);
@@ -63,9 +110,14 @@ void * st_thread(void* args) {
 #endif
 
 		// Read until theres nothing left
-		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
+		if(pass) {
+			memmove(buffer, comm.arr[id].req , 500);
+			rc = strlen(buffer);
+		}
+		else
+			rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
 #ifndef NDEBUG 
-		printf("read: %d ", rc);
+		printf("read: %d %s ", rc, buffer);
 		fflush(stdout);
 #endif
 		if(rc == -1) {
@@ -76,6 +128,11 @@ void * st_thread(void* args) {
 
 		// Figure out what we should look up
 		{
+			if(BUFFER_SIZE > TMPBUFFER_SIZE) {
+				tmpbuffer = realloc(tmpbuffer, BUFFER_SIZE);
+				TMPBUFFER_SIZE=BUFFER_SIZE;
+			}
+			memmove(tmpbuffer, buffer, BUFFER_SIZE);
 			ptr = strtok_r(buffer, del, &tok);
 			if(!ptr) // there was no message we can work with
 				goto fo0;
@@ -87,6 +144,26 @@ void * st_thread(void* args) {
 					local = 1;
 			}
 			
+			if(local) {
+				ptr = strtok_r(NULL, del, &tok);
+				if(!ptr)
+					goto fof;
+
+				req_id = atoi(ptr);
+				assert(req_id >= 0 && req_id < MAX_SERVE_THREADS);
+				if(req_id != id) {
+					memmove(comm.arr[req_id].req, tmpbuffer, 500);
+					comm.arr[req_id].socket = c_socket;
+					comm.arr[req_id].pass=1;
+					pass=0;
+					sc_signal(req_id, SIGUSR2);
+#ifndef NDEBUG
+					printf("%d: passing off ", id);
+					fflush(stdout);
+#endif
+					continue;
+				}
+			}
 			ptr = strtok_r(NULL, del, &tok);
 			if(!ptr)
 				goto fof;
@@ -126,7 +203,8 @@ void * st_thread(void* args) {
 			shared->size = 0;
 			shared->done = 0;
 			memmove(shared->data, twozerozero, len200);
-			shared->size = len200;
+			int rt = sprintf(shared->data+len200, "%d%s", sz, endtrans);
+			shared->size = len200+rt;
 #ifndef NDEBUG
 			printf("header: %d ", shared->size);
 			fflush(stdout);
@@ -134,6 +212,8 @@ void * st_thread(void* args) {
 		}
 		else {
 			rc = s_data( c_socket, twozerozero, len200); 
+			int rt = sprintf(buffer, "%d%s%s", sz, endtrans, endtrans);
+			rc += s_data(c_socket, buffer, rt);
 			if( rc < 0 ) {
 				goto close;
 			}
@@ -144,13 +224,13 @@ void * st_thread(void* args) {
 		}
 
 		if(use_shared && local) {
-			size_t s = (sz >= 1024*1024) ? (1024*1024)-1 : sz;
+			size_t s = (sz >= 1024*1024) ? (1024*1024)-3 : sz;
 			size_t tot = 0;
 			while(!feof(fptr)) {
 				while(shared->safe && !stop);
 				if(shared->size == s){
 					sz -= s;
-					s = (sz >= 1024*1024) ? (1024*1024)-1 : sz;
+					s = (sz >= 1024*1024) ? (1024*1024)-3 : sz;
 					shared->size=0;
 					shared->safe = 1;
 					while(shared->safe && !stop);
@@ -243,8 +323,10 @@ foo:
 		goto close;
 
 close:
-		free(val->data);
-		free(val);
+		if(!pass) {
+			free(val->data);
+			free(val);
+		}
 
 		if( close(c_socket) == -1 ) {
 #ifndef NDEBUG

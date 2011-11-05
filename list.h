@@ -33,8 +33,8 @@ struct list_t {
 
 void push_back(struct list_t* restrict list, void* restrict a, size_t s,
     char* restrict label, int misc);
-struct node_t* pop_front_n_c(struct list_t* restrict list, int* pass, void (*callback)(void));
-void* pop_front_c(struct list_t* restrict list, int* pass, void (*callback)(void));
+struct node_t* pop_front_n_c(struct list_t* restrict list, int* pass);
+void* pop_front_c(struct list_t* restrict list, int* pass);
 
 void* pop_front(struct list_t* restrict list);
 struct node_t* pop_front_n(struct list_t* restrict list);

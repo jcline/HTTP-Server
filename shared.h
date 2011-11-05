@@ -4,8 +4,8 @@
 #include "include.h"
 
 struct shm_thread_t {
-	volatile pthread_mutex_t lock;
-	volatile pthread_cond_t sig;
+	pthread_mutex_t lock;
+	pthread_cond_t sig;
 	key_t key;
 	volatile size_t size;
 	volatile int web, proxy, init, done, safe;
