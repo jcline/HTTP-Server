@@ -173,7 +173,6 @@ cont:
 		if(use_shared && local) {
 			int i, j, rt;
 			rt = sprintf(buffer, "%d ", id);
-			printf("id: %d ", id);
 			for(i = strlen(tmpbuffer)+rt+1, j=i-rt;
 					j >= rt; --i, --j) {
 				tmpbuffer[i] = tmpbuffer[j];
