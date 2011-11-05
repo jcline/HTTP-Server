@@ -79,9 +79,6 @@ void * st_thread(void* args) {
 		else
 			pass = 1;
 
-		printf("%d ", comm.arr[id].pass);
-		fflush(stdout);
-
 		if(!val) {
 			if(comm.arr[id].pass) {
 				pass=1;
@@ -236,12 +233,8 @@ void * st_thread(void* args) {
 			if(s <= 0)
 				break;
 				*/
-			printf("%d: %p, %p, %d, %d", id, shared->data, shared->data+shared->size, shared->size, sz);
-			fflush(stdout);
 			assert(fptr);
 			shared->size += fread(shared->data + shared->size, sizeof(char), s, fptr);
-			printf("/%d ", id);
-			fflush(stdout);
 			/*
 			if(feof(fptr))
 				break;
