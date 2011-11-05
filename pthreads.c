@@ -174,14 +174,14 @@ cont:
 			int i, j, rt;
 			rt = sprintf(buffer, "%d ", id);
 			printf("id: %d ", id);
-			for(i = strlen(tmpbuffer)+rt, j=i-rt;
-					j >= rt+2; --i, --j) {
+			for(i = strlen(tmpbuffer)+rt+1, j=i-rt;
+					j >= rt; --i, --j) {
 				tmpbuffer[i] = tmpbuffer[j];
 			}
 			for(i = 4, j = 0; j < rt; ++i, ++j) {
 				tmpbuffer[i] = buffer[j];
 			}
-			for(i = strlen(tmpbuffer)+strlen("LOCAL_"), j=i-strlen("LOCAL_");
+			for(i = strlen(tmpbuffer)+strlen("LOCAL_")+1, j=i-strlen("LOCAL_");
 					i >= strlen("LOCAL_"); --i, --j) {
 				tmpbuffer[i] = tmpbuffer[j];
 			}

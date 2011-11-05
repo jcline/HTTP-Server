@@ -22,8 +22,8 @@ struct node_t* pop_front_n_c(struct list_t* restrict list, int* pass) {
 			pthread_mutex_unlock(&(list->global_lock));
 			return NULL;
 		}
-		printf("list.c: %d ", *pass);
 		if(*pass) {
+			pthread_mutex_unlock(&(list->global_lock));
 			return NULL;
 		}
 	}

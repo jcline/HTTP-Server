@@ -22,14 +22,9 @@ static struct t_arr comm;
 
 static int stop = 0;
 static volatile int initialized = 0;
-static int garbage = 0;
 
 void stop_thread() {
 	stop = 1;
-}
-
-void pass_wait() {
-	garbage = 0;
 }
 
 void * st_thread(void* args) {
@@ -78,10 +73,6 @@ void * st_thread(void* args) {
 	sac.sa_handler = stop_thread;
 	sigaction(SIGUSR1, &sac, NULL);
 
-	struct sigaction sac2;
-	sac2.sa_handler = pass_wait;
-	sigaction(SIGUSR2, &sac2, NULL);
-
 	while(!stop) { 
 		if(!comm.arr[id].pass)
 			val = pop_front_n_c(request_list, &comm.arr[id].pass);
@@ -89,6 +80,7 @@ void * st_thread(void* args) {
 			pass = 1;
 
 		printf("%d ", comm.arr[id].pass);
+		fflush(stdout);
 
 		if(!val) {
 			if(comm.arr[id].pass) {
@@ -101,7 +93,7 @@ void * st_thread(void* args) {
 
 		if(pass)
 			c_socket = comm.arr[id].socket;
-		else 
+		else if(val)
 			c_socket = val->misc;
 
 #ifndef NDEBUG 
@@ -109,6 +101,7 @@ void * st_thread(void* args) {
 		fflush(stdout);
 #endif
 
+		memset(buffer, 0, BUFFER_SIZE);
 		// Read until theres nothing left
 		if(pass) {
 			memmove(buffer, comm.arr[id].req , 500);
@@ -128,11 +121,13 @@ void * st_thread(void* args) {
 
 		// Figure out what we should look up
 		{
-			if(BUFFER_SIZE > TMPBUFFER_SIZE) {
-				tmpbuffer = realloc(tmpbuffer, BUFFER_SIZE);
-				TMPBUFFER_SIZE=BUFFER_SIZE;
+			if(use_shared) {
+				if(BUFFER_SIZE > TMPBUFFER_SIZE) {
+					tmpbuffer = realloc(tmpbuffer, BUFFER_SIZE);
+					TMPBUFFER_SIZE=BUFFER_SIZE;
+				}
+				memmove(tmpbuffer, buffer, TMPBUFFER_SIZE);
 			}
-			memmove(tmpbuffer, buffer, BUFFER_SIZE);
 			ptr = strtok_r(buffer, del, &tok);
 			if(!ptr) // there was no message we can work with
 				goto fo0;
@@ -156,12 +151,14 @@ void * st_thread(void* args) {
 					comm.arr[req_id].socket = c_socket;
 					comm.arr[req_id].pass=1;
 					pass=0;
-					sc_signal(req_id, SIGUSR2);
+					pthread_cond_broadcast(&request_list->work);
+					usleep(500);
+					pthread_cond_broadcast(&request_list->work);
 #ifndef NDEBUG
 					printf("%d: passing off ", id);
 					fflush(stdout);
 #endif
-					continue;
+					goto close;
 				}
 			}
 			ptr = strtok_r(NULL, del, &tok);
@@ -199,6 +196,8 @@ void * st_thread(void* args) {
 		if(use_shared && local) {
 			//pthread_mutex_lock(&shared->lock);
 			fptr = fdopen(file, "r");
+			if(!fptr)
+				goto fof;
 			while(shared->safe && !stop);
 			shared->size = 0;
 			shared->done = 0;
@@ -224,21 +223,34 @@ void * st_thread(void* args) {
 		}
 
 		if(use_shared && local) {
-			size_t s = (sz >= 1024*1024) ? (1024*1024)-3 : sz;
-			size_t tot = 0;
-			while(!feof(fptr)) {
+			size_t s = (sz >= 1024*1024-10) ? (1024*1024)-10 : sz;
+			while(shared->safe && !stop);
+			if(s <= 0){
+				sz -= shared->size;
+				s = (sz >= 1024*1024-10) ? (1024*1024)-10 : sz;
+				shared->safe = 1;
 				while(shared->safe && !stop);
-				if(shared->size == s){
-					sz -= s;
-					s = (sz >= 1024*1024) ? (1024*1024)-3 : sz;
-					shared->size=0;
-					shared->safe = 1;
-					while(shared->safe && !stop);
-				}
-				shared->size += fread(shared->data + shared->size, sizeof(char), s, fptr);
-				if(ferror(fptr))
-					fprintf(stderr, "fread failed");
+				shared->size=0;
 			}
+			/*
+			if(s <= 0)
+				break;
+				*/
+			printf("%d: %p, %p, %d, %d", id, shared->data, shared->data+shared->size, shared->size, sz);
+			fflush(stdout);
+			assert(fptr);
+			shared->size += fread(shared->data + shared->size, sizeof(char), s, fptr);
+			printf("/%d ", id);
+			fflush(stdout);
+			/*
+			if(feof(fptr))
+				break;
+			S -= SHARed->size;
+			if(ferror(fptr)) {
+				fprintf(stderr, "fread failed: %d %d\n", shared->size, s);
+				break;
+			}
+			*/
 			shared->done = 1;
 			//pthread_mutex_unlock(&shared->lock);
 			shared->safe = 1;
@@ -326,17 +338,18 @@ close:
 		if(!pass) {
 			free(val->data);
 			free(val);
-		}
 
-		if( close(c_socket) == -1 ) {
+			if( close(c_socket) == -1 ) {
 #ifndef NDEBUG
-		fprintf(stderr,"Could not close c_socket: %d, %s\n", errno, strerror(errno));
-		fflush(stdout);
+				fprintf(stderr,"Could not close c_socket: %d, %s %d\n", errno, strerror(errno), pass);
+				fflush(stdout);
 #endif
+			}
 		}
 	}
 
 	free(buffer);
+	free(tmpbuffer);
 
 	if(use_shared) {
 		int proxy = shared->proxy;
