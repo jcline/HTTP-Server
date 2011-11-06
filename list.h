@@ -43,4 +43,6 @@ struct node_t* pop_back_n(struct list_t* restrict list);
 void destroy(struct list_t* restrict list);
 void init(struct list_t* restrict list);
 
+struct node_t* getval_n(struct list_t* restrict list, size_t i);
+
 #endif

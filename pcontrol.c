@@ -98,7 +98,7 @@ void pc_start(int port, int us) {
 					pthread_condattr_t attr;
 					pthread_condattr_init(&attr);
 					if(pthread_condattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) perror("shm_cond");
-					if(pthread_cond_init(&(args[i]->share->lock), &attr)) perror("shm_cond_init");
+					if(pthread_cond_init(&(args[i]->share->sig), &attr)) perror("shm_cond_init");
 					pthread_condattr_destroy(&attr);
 				}
 

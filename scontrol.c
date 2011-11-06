@@ -69,27 +69,33 @@ void sc_start(int port, int us) {
 	use_shared = us;
 
   args = (struct st_args_t **) malloc(sizeof(struct st_args_t*)*MAX_SERVE_THREADS);
+	struct shm_thread_t ** t_t = NULL;
+	if(use_shared)
+		t_t = (struct shm_thread_t**) malloc(sizeof(struct shm_thread_t*)*MAX_SERVE_THREADS);
 
   sthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_SERVE_THREADS);
 
   int i;
   for(i = 0; i < MAX_SERVE_THREADS; ++i) {
 		args[i] = (struct st_args_t*) malloc(sizeof(struct st_args_t));
+		if(use_shared)
+			t_t[i] = (struct shm_thread_t*) malloc(sizeof(struct shm_thread_t));
 	
 		args[i]->request_list = &request_list;
 		args[i]->done = 0;
 		args[i]->use_shared = us;
 		args[i]->id = i;
+		args[i]->share = t_t;
 		if(use_shared) {
-			if( shared_manage( &(args[i]->share), &(args[i]->shmid), i+0xab, sizeof(struct shm_thread_t)) )
+			if( shared_manage( &t_t[i], &(args[i]->shmid), i+0xab, sizeof(struct shm_thread_t)) )
 				exit(1);
-			args[i]->share->web = 1;
-			if(!args[i]->share->init) {
+			t_t[i]->web = 1;
+			if(!t_t[i]->init) {
 				{
 					pthread_mutexattr_t attr;
 					pthread_mutexattr_init(&attr);
 					if(pthread_mutexattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) perror("shm_mutex");
-					if(pthread_mutex_init(&(args[i]->share->lock), &attr)) perror("shm_mutex_init");
+					if(pthread_mutex_init(&(t_t[i]->lock), &attr)) perror("shm_mutex_init");
 					pthread_mutexattr_destroy(&attr);
 				}
 
@@ -97,15 +103,15 @@ void sc_start(int port, int us) {
 					pthread_condattr_t attr;
 					pthread_condattr_init(&attr);
 					if(pthread_condattr_setpshared(&attr, PTHREAD_PROCESS_SHARED)) perror("shm_cond");
-					if(pthread_cond_init(&(args[i]->share->lock), &attr)) perror("shm_cond_init");
+					if(pthread_cond_init(&(t_t[i]->sig), &attr)) perror("shm_cond_init");
 					pthread_condattr_destroy(&attr);
 				}
 
-				args[i]->share->init = 1;
+				t_t[i]->init = 1;
 			}
 		}
 		else
-			args[i]->share = NULL;
+			t_t = NULL;
 
 		sthreads[i] = (pthread_t *) malloc(sizeof(pthread_t));
 		assert(sthreads[i]);

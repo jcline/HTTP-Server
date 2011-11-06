@@ -202,28 +202,22 @@ cont:
 #endif
 
 		if(use_shared && local) {
-			/*pthread_mutex_lock(&shared->lock);
-			while(!shared->safe)
+			pthread_mutex_lock(&shared->lock);
+			while(!shared->safe && !stop)
 				pthread_cond_wait(&shared->sig, &shared->lock);
-				*/
-
-			while(!stop) {
-				while(!shared->safe && !stop);
 
 				rc = s_data(c_socket, shared->data, shared->size);
 
 				shared->safe = 0;
 				shared->size = 0;
-				//pthread_mutex_unlock(&shared->lock);
 #ifndef NDEBUG
 				printf("send: %d ", rc);
 				fflush(stdout);
 #endif
 				if(shared->done) {
 					shared->done = 0;
-					break;
 				}
-			}
+				pthread_mutex_unlock(&shared->lock);
 		}
 		else {
 			rc = sp_control(filds, c_socket, s_socket, 0);
