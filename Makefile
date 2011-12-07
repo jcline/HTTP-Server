@@ -1,6 +1,6 @@
 CC			= gcc
-#CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
-CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
+CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
+#CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O3
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
@@ -25,6 +25,8 @@ PSRC = \
 			net.c \
 			pthreads.c \
 			pcontrol.c \
+			jpeg_clnt.c \
+			jpeg_xdr.c \
 			proxy.c
 
 
@@ -32,16 +34,11 @@ SOBJS = $(SSRC:.c=.o)
 COBJS = $(CSRC:.c=.o)
 POBJS = $(PSRC:.c=.o)
 
-all: webserver client proxy
-
-webserver: $(SOBJS)
-	$(LINKER) $(LFLAGS) $(SOBJS) -o $@
-
-client: $(COBJS)
-	$(LINKER) $(LFLAGS) $(COBJS) -o $@
-
 proxy: $(POBJS)
 	$(LINKER) $(LFLAGS) $(POBJS) -o $@
 
+compress: jpeg_xdr.o jpeg.h
+	$(LINKER) jpeg_svc.c -o $@
+
 clean:
-	rm $(SOBJS) $(COBJS) $(POBJS) client webserver proxy
+	rm $(SOBJS) $(COBJS) $(POBJS) client webserver proxy compress

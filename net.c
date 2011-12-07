@@ -47,10 +47,6 @@ ssize_t sp_data(int out, int in, size_t size) {
 			fprintf(stderr, "sp_data: %d,%d,%d: %s\n", out, in, errno, strerror(errno));
 			return -1;
 		}
-#ifndef NDEBUG
-		printf("spd: %d/%d ", rc, size);
-		fflush(stdout);
-#endif
 		s_s -= rc;
 		size -= rc;
 		if(!s_s && size) {

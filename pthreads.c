@@ -58,7 +58,7 @@ void * pt_thread(void* args) {
 		// Read until theres nothing left
 		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
 #ifndef NDEBUG 
-		printf("read: %d ", rc);
+		printf("read: %d, %s\n", rc, buffer);
 #endif
 		if(rc == -1) {
 			goto close;
@@ -68,14 +68,13 @@ void * pt_thread(void* args) {
 
 		// Make sure this is a GET request
 		{
+			memcpy(tmpbuffer, buffer, rc);
 			ptr = strtok_r(buffer, wdel, &tok);
 			if(!ptr) // there was no message we can work with
 				goto fo0;
+
 			if(strcmp(ptr, "GET"))
 				goto foo;
-			tmpbuffer[0] = '\0';
-			strcat(tmpbuffer, ptr);
-			
 			ptr = strtok_r(NULL, sdel, &tok);
 			if(!ptr)
 				goto fof;
@@ -87,34 +86,58 @@ void * pt_thread(void* args) {
 				goto fof;
 
 			pptr = strtok_r(NULL, sdel, &tok);
+			printf("%s\t%s\n", ptr, pptr);
 			if(!ptr)
 				goto fof;
-			if( (rv = getaddrinfo(ptr, pptr, &hints, &result)) != 0) {
-				fprintf(stderr,"getaddrinfo failure: %s", gai_strerror(rv));
-				goto fof;
+
+			int noport = 1;
+			if(isdigit(pptr[0])) {
+				noport = 0;
+				if( (rv = getaddrinfo(ptr, pptr, &hints, &result)) != 0) {
+					fprintf(stderr,"getaddrinfo failure: %s", gai_strerror(rv));
+					goto fof;
+				}
+			}
+			else {
+				if( (rv = getaddrinfo(ptr, "80", &hints, &result)) != 0) {
+					fprintf(stderr,"getaddrinfo failure: %s", gai_strerror(rv));
+					goto fof;
+				}
 			}
 			assert(result);
 #ifndef NDEBUG
-			printf("CON: %s:%s ", ptr, pptr);
+			if(noport)
+				printf("CON: %s:80 ", ptr);
+			else
+				printf("CON: %s:%s ", ptr, pptr);
 			fflush(stdout);
 #endif
 
-			ptr = strtok_r(NULL, "\0", &tok);
-			if(!ptr)
-				goto fof;
-			strcat(tmpbuffer, " /");
-			strcat(tmpbuffer, ptr);
-
 		}
+
+		ptr = strstr(tmpbuffer, "HTTP");
+		ptr[7] = '0';
+		printf("\ntmpbuffer: %s\n", tmpbuffer);
+		ptr[8] = '\x0d';
+		ptr[9] = '\x0a';
+		ptr[10] = '\x0d';
+		ptr[11] = '\x0a';
+		ptr[12] = '\0';
 
 		{
 			struct addrinfo *i;
 			for(i = result; i != NULL; i = i->ai_next) {
 				if( (s_socket = socket(i->ai_family, i->ai_socktype, i->ai_protocol)) == -1) {
+#ifndef NDEBUG
+					perror("socket");
+#endif
 					continue;
 				}
 
 				if( connect(s_socket, i->ai_addr, i->ai_addrlen) == -1) {
+#ifndef NDEBUG
+					perror("connect");
+#endif
 					close(s_socket);
 					continue;
 				}
@@ -130,7 +153,7 @@ void * pt_thread(void* args) {
 		fflush(stdout);
 #endif
 
-		rc = s_data(s_socket, tmpbuffer, rc);
+		rc = s_data(s_socket, tmpbuffer, strlen(tmpbuffer));
 #ifndef NDEBUG
 			printf("req: %d ", rc);
 			fflush(stdout);
