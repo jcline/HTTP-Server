@@ -40,7 +40,7 @@ proxy: $(POBJS)
 	$(LINKER) $(LFLAGS) $(POBJS) -o $@
 
 compress: 
-	$(LINKER) -g jpeg_shrink.c jpeg_xdr.c jpeg_svc.c -o $@ jpeg-6b/lowres.o jpeg-6b/lowres-write.o jpeg-6b/libjpeg.a
+	$(LINKER) $(CFLAGS) jpeg_shrink.c jpeg_xdr.c jpeg_svc.c -o $@ jpeg-6b/lowres.o jpeg-6b/lowres-write.o jpeg-6b/libjpeg.a
 
 clean:
 	rm $(SOBJS) $(COBJS) $(POBJS) client webserver proxy compress

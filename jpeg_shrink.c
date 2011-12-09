@@ -15,7 +15,5 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
 	change_res_JPEG_F(f, &arg->data, &arg->size);
 
-	fclose(f);
-
 	return arg;
 }
