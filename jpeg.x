@@ -1,7 +1,6 @@
 
 struct img_t {
-  string data;
-	unsigned int size;
+  char data<>;
 };
 
 program JPEG_SHRINK{

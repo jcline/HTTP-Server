@@ -15,8 +15,10 @@ extern "C" {
 
 
 struct img_t {
-	char *data;
-	u_int size;
+	struct {
+		u_int data_len;
+		char *data_val;
+	} data;
 };
 typedef struct img_t img_t;
 

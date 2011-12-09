@@ -9,28 +9,28 @@
 
 img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
-	printf("arg->size: %d\t%d\n", arg->size, strlen(arg->data));
+	printf("arg->data.data_len: %d\t%d\n", arg->data.data_len, strlen(arg->data.data_val));
 
 	int f = -1;
 	f = open("scratch.jpg", O_RDWR | O_CREAT | O_TRUNC);
 	if(f == -1)
 		perror("open");
 
-	printf("%d\n", arg->size);
-	if(write(f, arg->data, arg->size) == -1)
+	printf("%d\n", arg->data.data_len);
+	if(write(f, arg->data.data_val, arg->data.data_len) == -1)
 		perror("write");
 
-	if(arg->data)
-		memset(arg->data, 0, arg->size);
+	if(arg->data.data_val)
+		memset(arg->data.data_val, 0, arg->data.data_len);
 	else {
 		close(f);
 		remove("scratch.jpg");
 		return arg;
 	}
 
-	arg->size = 100;
+	arg->data.data_len = 100;
 
-	change_res_JPEG(f, &arg->data, (int*) &arg->size);
+	change_res_JPEG(f, &arg->data.data_val, (int*) &arg->data.data_len);
 	remove("scratch.jpg");
 
 	return arg;
