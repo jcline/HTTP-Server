@@ -22,12 +22,14 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 		memset(arg->data, 0, arg->size);
 	else {
 		close(f);
+		remove("scratch.jpg");
 		return arg;
 	}
 
 	arg->size = 100;
 
 	change_res_JPEG(f, &arg->data, (int*) &arg->size);
+	remove("scratch.jpg");
 
 	return arg;
 }
