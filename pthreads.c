@@ -193,6 +193,10 @@ void * pt_thread(void* args) {
 				rc = r_data_tv_c(s_socket, &tmpbuffer, &TMPBUFFER_SIZE, NULL);
 
 				ptr = strstr(tmpbuffer, "\x0d\x0a\x0d\x0a");
+				for(char* p = tmpbuffer; p < ptr; ++p)
+					printf("%c", *p);
+				printf("\n");
+
 				ptr += 4;
 				i.data.data_val = ptr;
 				i.data.data_len = rc - (ptr - tmpbuffer);

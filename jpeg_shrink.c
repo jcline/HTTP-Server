@@ -29,7 +29,7 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 		return arg;
 	}
 
-	arg->data.data_len = 100*100;
+	arg->data.data_len *= .5;
 
 	if(change_res_JPEG(f, &arg->data.data_val, (int*) &arg->data.data_len) == 0)
 		arg->suc = 0;
