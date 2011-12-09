@@ -7,7 +7,7 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
 	FILE* f = fopen("scratch.jpg", "w+");
 
-	static img_t i;
+	static img_t * i = (img_t*) malloc(sizeof(img_t));
 
 	fwrite(arg->data, sizeof(char), arg->size, f);
 
