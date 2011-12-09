@@ -196,10 +196,8 @@ void * pt_thread(void* args) {
 				ptr += 4;
 				i.data = ptr;
 				i.size = rc - (ptr - tmpbuffer);
+				printf("i.size: %d\n", i.size);
 				img_t * ret = shrink_img_1(&i, client);
-
-
-
 
 			}
 
