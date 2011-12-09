@@ -11,11 +11,12 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
 	int f = -1;
 	f = open("scratch.jpg", O_RDWR);
-	perror("write");
+	if(f == -1)
+		perror("open");
 
 	printf("%d\n", arg->size);
-	write(f, arg->data, arg->size);
-	perror("write");
+	if(write(f, arg->data, arg->size) == -1)
+		perror("write");
 
 	if(arg->data)
 		memset(arg->data, 0, arg->size);
