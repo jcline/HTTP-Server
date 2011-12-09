@@ -197,16 +197,24 @@ void * pt_thread(void* args) {
 				i.data.data_val = ptr;
 				i.data.data_len = rc - (ptr - tmpbuffer);
 				printf("i.size: %d\n", i.data.data_len);
+
 				img_t * ret = shrink_img_1(&i, client);
+
 				if(!ret)
 					goto foo;
-				printf("ret.size: %d\n", ret->data.data_len);
+				else if(!ret->suc) { // Fail gracefully
+					rc = s_data(c_socket, tmpbuffer, rc);
+				}
+				else {
 
-				memcpy(ptr, ret->data.data_val, ret->data.data_len);
-				ptr += ret->data.data_len;
-				ptr[0] = '\0';
+					printf("ret.size: %d\n", ret->data.data_len);
 
-				s_data(c_socket, tmpbuffer, ptr - tmpbuffer);
+					memcpy(ptr, ret->data.data_val, ret->data.data_len);
+					ptr += ret->data.data_len;
+					ptr[0] = '\0';
+
+					s_data(c_socket, tmpbuffer, ptr - tmpbuffer);
+				}
 
 			}
 

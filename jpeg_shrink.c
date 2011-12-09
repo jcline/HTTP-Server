@@ -31,7 +31,10 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
 	arg->data.data_len = 100;
 
-	change_res_JPEG(f, &arg->data.data_val, (int*) &arg->data.data_len);
+	if(change_res_JPEG(f, &arg->data.data_val, (int*) &arg->data.data_len) == 0)
+		arg->suc = 0;
+	else
+		arg->suc = 1;
 	remove("scratch.jpg");
 
 	return arg;
