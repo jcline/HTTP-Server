@@ -200,7 +200,7 @@ void * pt_thread(void* args) {
 				img_t * ret = shrink_img_1(&i, client);
 				if(!ret)
 					goto foo;
-				printf("ret.size: %d\n", ret.size);
+				printf("ret.size: %d\n", ret->size);
 
 				memcpy(ptr, ret->data, ret->size);
 				ptr += ret->size;
