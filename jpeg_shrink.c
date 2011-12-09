@@ -10,7 +10,7 @@
 img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
 	int f = -1;
-	f = open("scratch.jpg", O_RDWR);
+	f = open("scratch.jpg", O_RDWR | O_CREAT | O_TRUNC);
 	if(f == -1)
 		perror("open");
 
