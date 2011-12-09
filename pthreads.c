@@ -80,7 +80,7 @@ void * pt_thread(void* args) {
 				TMPBUFFER_SIZE = BUFFER_SIZE;
 				realloc(tmpbuffer, TMPBUFFER_SIZE);
 			}
-			memcpy(tmpbuffer, buffer, rc);
+			memcpy(tmpbuffer, buffer, rc+1);
 			ptr = strtok_r(buffer, wdel, &tok);
 			if(!ptr) // there was no message we can work with
 				goto fo0;

@@ -1,6 +1,6 @@
 
 struct img_t {
-	char* data;
+  string data;
 	unsigned int size;
 };
 
