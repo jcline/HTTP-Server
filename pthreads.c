@@ -192,10 +192,11 @@ void * pt_thread(void* args) {
 				memset(tmpbuffer, 0, TMPBUFFER_SIZE);
 				rc = r_data_tv_c(s_socket, &tmpbuffer, &TMPBUFFER_SIZE, NULL);
 
-				ptr = strstr(tmpbuffer, "\x0d\x0a\x0d\x0a");
-				for(char* p = tmpbuffer; p < ptr; ++p)
-					printf("%c", *p);
-				printf("\n");
+				ptr = strstr(tmpbuffer, "200 OK");
+				if(!ptr)
+					goto fof;
+
+				ptr = strstr(ptr, "\x0d\x0a\x0d\x0a");
 
 				ptr += 4;
 				i.data.data_val = ptr;
@@ -208,6 +209,14 @@ void * pt_thread(void* args) {
 					goto foo;
 
 				printf("ret.size: %d\n", ret->data.data_len);
+
+				ptr = strstr(tmpbuffer, "200 OK");
+				ptr += 6;
+				ptr[0] = '\x0d';
+				ptr[1] = '\x0a';
+				ptr[2] = '\x0d';
+				ptr[3] = '\x0a';
+				ptr += 4;
 
 				memcpy(ptr, ret->data.data_val, ret->data.data_len);
 				ptr += ret->data.data_len;
