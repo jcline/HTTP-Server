@@ -11,6 +11,7 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
 	int f = -1;
 	f = open("scratch.jpg", O_RDWR);
+	perror("write");
 
 	printf("%d\n", arg->size);
 	write(f, arg->data, arg->size);
