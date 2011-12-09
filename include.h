@@ -22,6 +22,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <rpc/rpc.h>
 #include <signal.h>
 #include <sys/errno.h>
 #include <sys/socket.h>

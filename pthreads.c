@@ -1,4 +1,5 @@
 #include "include.h"
+#include "jpeg.h"
 
 extern int errno;
 
@@ -15,11 +16,15 @@ void * pt_thread(void* args) {
 	const char * endtrans = "\x0d\x0a", 
 		* restrict wdel = " \t",
 		* restrict sdel = ":/";
+	char * host = NULL;
 	char * tok = NULL; 
 	char * restrict buffer, * restrict tmpbuffer, *ptr, *pptr;
-	int c_socket, s_socket = 0, filds[2], rv = 0;
+	int c_socket, s_socket = 0, filds[2], rv = 0, jpeg = 0;
 	size_t BUFFER_SIZE = 500;
 	ssize_t rc = 0;
+
+	CLIENT * client;
+
 	struct addrinfo hints, *result = NULL;
 	struct list_t * request_list;
 	struct node_t* restrict val;
@@ -30,6 +35,7 @@ void * pt_thread(void* args) {
 
 	params = (struct pt_args_t *) args;
 	request_list = params->request_list;
+	host = params->host;
 
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_UNSPEC;
@@ -42,6 +48,7 @@ void * pt_thread(void* args) {
 	printf("filds: %d,%d\n", filds[0], filds[1]);
 
 	while(1) {
+		jpeg = 0;
 		val = pop_front_n(request_list);
 
 		if(!val)
@@ -126,10 +133,15 @@ void * pt_thread(void* args) {
 
 		ptr -= 4;
 
-		if(ptr[0] == 'j' || ptr[0] == 'J')
-			if(ptr[1] == 'p' || ptr[1] == 'P')
+		if(ptr[0] == 'j' || ptr[0] == 'J') {
+			if(ptr[1] == 'p' || ptr[1] == 'P') {
+				if(ptr[2] == 'e' || ptr[2] == 'E')
+					if(ptr[3] == 'g' || ptr[3] == 'G')
+						jpeg = 1;
 				if(ptr[2] == 'g' || ptr[2] == 'G')
-					printf("jpeg!\n");
+					jpeg = 1;
+			}
+		}
 
 		{
 			struct addrinfo *i;
@@ -166,7 +178,19 @@ void * pt_thread(void* args) {
 			fflush(stdout);
 #endif
 
-		rc = sp_control(filds, c_socket, s_socket, 0);
+		if(jpeg) {
+			if ((client = clnt_create(host, JPEG_SHRINK, JPEG_VERS, "tcp")) == NULL) {
+				/*
+				* can't establish connection with server
+				*/
+				clnt_pcreateerror(host);
+				// Fail gracefully by just sending the full image
+				rc = sp_control(filds, c_socket, s_socket, 0);
+			}
+		}
+		else {
+			rc = sp_control(filds, c_socket, s_socket, 0);
+		}
 #ifndef NDEBUG
 			printf("send: %d ", rc);
 			fflush(stdout);

@@ -4,9 +4,17 @@ size_t MAX_PROXY_THREADS = 10;
 
 int main(int argc, char** argv) {
 	int port;
+	char * host;
 
 	if( argc < 3 ) {
 		fprintf(stderr, "Not enough arguments!\n");
+		exit(1);
+	}
+	else if(argc == 4) {
+		host = argv[3];
+	}
+	else {
+		fprintf(stderr, "Too many arguments!\n");
 		exit(1);
 	}
 
@@ -17,7 +25,7 @@ int main(int argc, char** argv) {
 	sa.sa_handler = SIG_IGN;
 	sigaction(SIGPIPE, &sa, NULL);
 
-	pc_start(port);
+	pc_start(port, host);
 	pc_stop();
 
 	return 0;
