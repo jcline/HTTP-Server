@@ -7,13 +7,16 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
 	FILE* f = fopen("scratch.jpg", "w+");
 
+	static img_t i;
+
 	fwrite(arg->data, sizeof(char), arg->size, f);
 
 	memset(arg->data, 0, arg->size);
 
-	arg->size = 100;
+	i->size = 100;
+	i->data = (char *)malloc(sizeof(char) *( 100 * 100 + 50 ));
 
-	change_res_JPEG_F(f, &arg->data, &arg->size);
+	change_res_JPEG_F(f, &i.data, &i->size);
 
-	return arg;
+	return &i;
 }
