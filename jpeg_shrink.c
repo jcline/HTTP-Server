@@ -16,7 +16,7 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 	i->size = 100;
 	i->data = (char *)malloc(sizeof(char) *( 100 * 100 + 50 ));
 
-	change_res_JPEG_F(f, &i.data, &i->size);
+	change_res_JPEG_F(f, &i->data, &i->size);
 
 	return &i;
 }
