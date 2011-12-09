@@ -1,6 +1,7 @@
 
 struct img_t {
   char data<>;
+	int suc;
 };
 
 program JPEG_SHRINK{

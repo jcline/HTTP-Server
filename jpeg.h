@@ -19,6 +19,7 @@ struct img_t {
 		u_int data_len;
 		char *data_val;
 	} data;
+	int suc;
 };
 typedef struct img_t img_t;
 

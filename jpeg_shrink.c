@@ -9,7 +9,7 @@
 
 img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
-	printf("arg->data.data_len: %d\t%d\n", arg->data.data_len, strlen(arg->data.data_val+4));
+	printf("arg->data.data_len: %d\t%d\n", arg->data.data_len, strlen(arg->data.data_val));
 
 	int f = -1;
 	f = open("scratch.jpg", O_RDWR | O_CREAT | O_TRUNC);
@@ -23,6 +23,7 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 	if(arg->data.data_val)
 		memset(arg->data.data_val, 0, arg->data.data_len);
 	else {
+		arg->suc = 0;
 		close(f);
 		remove("scratch.jpg");
 		return arg;
