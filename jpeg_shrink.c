@@ -15,7 +15,12 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 	printf("%d\n", arg->size);
 	write(f, arg->data, arg->size);
 
-	memset(arg->data, 0, arg->size);
+	if(arg->data)
+		memset(arg->data, 0, arg->size);
+	else {
+		close(f);
+		return arg;
+	}
 
 	arg->size = 100;
 
