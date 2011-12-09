@@ -202,19 +202,14 @@ void * pt_thread(void* args) {
 
 				if(!ret)
 					goto foo;
-				else if(!ret->suc) { // Fail gracefully
-					rc = s_data(c_socket, tmpbuffer, rc);
-				}
-				else {
 
-					printf("ret.size: %d\n", ret->data.data_len);
+				printf("ret.size: %d\n", ret->data.data_len);
 
-					memcpy(ptr, ret->data.data_val, ret->data.data_len);
-					ptr += ret->data.data_len;
-					ptr[0] = '\0';
+				memcpy(ptr, ret->data.data_val, ret->data.data_len);
+				ptr += ret->data.data_len;
+				ptr[0] = '\0';
 
-					s_data(c_socket, tmpbuffer, ptr - tmpbuffer);
-				}
+				s_data(c_socket, tmpbuffer, ptr - tmpbuffer);
 
 			}
 
