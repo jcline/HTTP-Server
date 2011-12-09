@@ -25,8 +25,8 @@ PSRC = \
 			net.c \
 			pthreads.c \
 			pcontrol.c \
-			jpeg_clnt.c \
 			jpeg_xdr.c \
+			jpeg_clnt.c \
 			proxy.c
 
 
@@ -37,8 +37,8 @@ POBJS = $(PSRC:.c=.o)
 proxy: $(POBJS)
 	$(LINKER) $(LFLAGS) $(POBJS) -o $@
 
-compress: jpeg_xdr.o jpeg.h
-	$(LINKER) jpeg_svc.c -o $@
+compress: 
+	$(LINKER) jpeg_shrink.c jpeg_xdr.c jpeg_svc.c -o $@
 
 clean:
 	rm $(SOBJS) $(COBJS) $(POBJS) client webserver proxy compress

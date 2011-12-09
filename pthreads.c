@@ -124,6 +124,13 @@ void * pt_thread(void* args) {
 		ptr[11] = '\x0a';
 		ptr[12] = '\0';
 
+		ptr -= 4;
+
+		if(ptr[0] == 'j' || ptr[0] == 'J')
+			if(ptr[1] == 'p' || ptr[1] == 'P')
+				if(ptr[2] == 'g' || ptr[2] == 'G')
+					printf("jpeg!\n");
+
 		{
 			struct addrinfo *i;
 			for(i = result; i != NULL; i = i->ai_next) {

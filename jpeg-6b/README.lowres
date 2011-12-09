@@ -1,0 +1,9 @@
+Compile both lowres.c and lowres-write.c into object files:
+	gcc -c lowres.c lowres-write.c
+You can link these object files to your executable, together with
+the main library (libjpeg.a).
+For instance, my makefile compiles my server using the command:
+	gcc -o webserver2 webserver2.cpp jpeg-6b/lowres.o jpeg-6b/lowres-write.o jpeg-6b/libjpeg.a -lpthread -lsocket
+
+
+Make sure you include "lowres.h" as a header file for your programs.

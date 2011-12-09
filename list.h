@@ -52,3 +52,4 @@ void* getval(struct list_t* restrict list, size_t i);
 
 
 #endif
+
