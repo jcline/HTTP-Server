@@ -21,6 +21,7 @@ void * pt_thread(void* args) {
 	char * restrict buffer, * restrict tmpbuffer, *ptr, *pptr;
 	int c_socket, s_socket = 0, filds[2], rv = 0, jpeg = 0;
 	size_t BUFFER_SIZE = 500;
+	size_t TMPBUFFER_SIZE = 500;
 	ssize_t rc = 0;
 
 	CLIENT * client;
@@ -31,7 +32,7 @@ void * pt_thread(void* args) {
 	struct pt_args_t * params;
 
 	buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
-	tmpbuffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
+	tmpbuffer = (char *) malloc(sizeof(char)*TMPBUFFER_SIZE),
 
 	params = (struct pt_args_t *) args;
 	request_list = params->request_list;
@@ -75,6 +76,10 @@ void * pt_thread(void* args) {
 
 		// Make sure this is a GET request
 		{
+			if(BUFFER_SIZE > TMPBUFFER_SIZE) {
+				TMPBUFFER_SIZE = BUFFER_SIZE;
+				realloc(tmpbuffer, TMPBUFFER_SIZE);
+			}
 			memcpy(tmpbuffer, buffer, rc);
 			ptr = strtok_r(buffer, wdel, &tok);
 			if(!ptr) // there was no message we can work with
@@ -133,15 +138,10 @@ void * pt_thread(void* args) {
 
 		ptr -= 4;
 
-		if(ptr[0] == 'j' || ptr[0] == 'J') {
-			if(ptr[1] == 'p' || ptr[1] == 'P') {
-				if(ptr[2] == 'e' || ptr[2] == 'E')
-					if(ptr[3] == 'g' || ptr[3] == 'G')
-						jpeg = 1;
+		if(ptr[0] == 'j' || ptr[0] == 'J')
+			if(ptr[1] == 'p' || ptr[1] == 'P')
 				if(ptr[2] == 'g' || ptr[2] == 'G')
 					jpeg = 1;
-			}
-		}
 
 		{
 			struct addrinfo *i;
@@ -187,6 +187,22 @@ void * pt_thread(void* args) {
 				// Fail gracefully by just sending the full image
 				rc = sp_control(filds, c_socket, s_socket, 0);
 			}
+			else {
+				img_t i;
+				memset(tmpbuffer, 0, TMPBUFFER_SIZE);
+				rc = r_data_tv_c(s_socket, &tmpbuffer, &TMPBUFFER_SIZE, NULL);
+
+				ptr = strstr(tmpbuffer, "\x0d\x0a\x0d\x0a");
+				ptr += 4;
+				i.data = ptr;
+				i.size = rc - (ptr - tmpbuffer);
+				img_t * ret = shrink_img_1(&i, client);
+
+
+
+
+			}
+
 		}
 		else {
 			rc = sp_control(filds, c_socket, s_socket, 0);
