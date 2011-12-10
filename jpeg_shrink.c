@@ -9,8 +9,6 @@
 
 img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
-	printf("arg->data.data_len: %d\t%d\n", arg->data.data_len, strlen(arg->data.data_val));
-
 	int f = -1;
 	f = open("scratch.jpg", O_RDWR | O_CREAT | O_TRUNC);
 	if(f == -1)
@@ -29,9 +27,15 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 		return arg;
 	}
 
-	arg->data.data_len *= .5;
+	arg->data.data_len = 0;
 
-	if(change_res_JPEG(f, &arg->data.data_val, (int*) &arg->data.data_len) == 0)
+	FILE * file = fdopen(f, "r");
+	if(!file)
+		perror("fdopen");
+
+	rewind(file);
+
+	if(change_res_JPEG(f, &arg->data.data_val,(int*) &arg->data.data_len) == 0)
 		arg->suc = 0;
 	else
 		arg->suc = 1;
@@ -39,3 +43,4 @@ img_t * shrink_img_1_svc(img_t * arg, struct svc_req * sr) {
 
 	return arg;
 }
+

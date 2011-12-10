@@ -24,15 +24,15 @@ void * pt_thread(void* args) {
 	size_t TMPBUFFER_SIZE = 500;
 	ssize_t rc = 0;
 
-	CLIENT * client;
+	CLIENT * client = NULL;
 
 	struct addrinfo hints, *result = NULL;
 	struct list_t * request_list;
 	struct node_t* restrict val;
 	struct pt_args_t * params;
 
-	buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE),
-	tmpbuffer = (char *) malloc(sizeof(char)*TMPBUFFER_SIZE),
+	buffer = (char *) malloc(sizeof(char)*BUFFER_SIZE);
+	tmpbuffer = (char *) malloc(sizeof(char)*TMPBUFFER_SIZE);
 
 	params = (struct pt_args_t *) args;
 	request_list = params->request_list;
@@ -66,7 +66,7 @@ void * pt_thread(void* args) {
 		// Read until theres nothing left
 		rc = r_data_tv(c_socket, &buffer, (size_t*) &BUFFER_SIZE, endtrans, 2, 1, NULL);
 #ifndef NDEBUG 
-		printf("read: %d, %s\n", rc, buffer);
+		printf("read: %d ", rc);
 #endif
 		if(rc == -1) {
 			goto close;
@@ -78,7 +78,7 @@ void * pt_thread(void* args) {
 		{
 			if(BUFFER_SIZE > TMPBUFFER_SIZE) {
 				TMPBUFFER_SIZE = BUFFER_SIZE;
-				realloc(tmpbuffer, TMPBUFFER_SIZE);
+				tmpbuffer = realloc(tmpbuffer, TMPBUFFER_SIZE);
 			}
 			memcpy(tmpbuffer, buffer, rc+1);
 			ptr = strtok_r(buffer, wdel, &tok);
@@ -98,7 +98,6 @@ void * pt_thread(void* args) {
 				goto fof;
 
 			pptr = strtok_r(NULL, sdel, &tok);
-			printf("%s\t%s\n", ptr, pptr);
 			if(!ptr)
 				goto fof;
 
@@ -129,7 +128,6 @@ void * pt_thread(void* args) {
 
 		ptr = strstr(tmpbuffer, "HTTP");
 		ptr[7] = '0';
-		printf("\ntmpbuffer: %s\n", tmpbuffer);
 		ptr[8] = '\x0d';
 		ptr[9] = '\x0a';
 		ptr[10] = '\x0d';
@@ -201,14 +199,10 @@ void * pt_thread(void* args) {
 				ptr += 4;
 				i.data.data_val = ptr;
 				i.data.data_len = rc - (ptr - tmpbuffer);
-				printf("i.size: %d\n", i.data.data_len);
 
+				pthread_mutex_lock(&params->rpc_lock);
 				img_t * ret = shrink_img_1(&i, client);
-
-				if(!ret)
-					goto foo;
-
-				printf("ret.size: %d\n", ret->data.data_len);
+				pthread_mutex_unlock(&params->rpc_lock);
 
 				ptr = strstr(tmpbuffer, "200 OK");
 				ptr += 6;

@@ -19,8 +19,8 @@ void * sc_manager(void* args) {
     exit(1);
   }
 
-	int TRUE = 1;
-	setsockopt(s_socket, SOL_SOCKET, SO_REUSEADDR, (char*) &TRUE, sizeof(TRUE));
+	int True = 1;
+	setsockopt(s_socket, SOL_SOCKET, SO_REUSEADDR, (char*) &True, sizeof(True));
 
 
   s_addr.sin_addr.s_addr=INADDR_ANY;

@@ -7,6 +7,7 @@ struct pt_args_t {
 	struct list_t * request_list;
 	int done, s_port;
 	char* host;
+	pthread_mutex_t rpc_lock;
 	struct sockaddr_in * s_addr;
 	struct hostent* s_info;
 };

@@ -34,7 +34,13 @@ SOBJS = $(SSRC:.c=.o)
 COBJS = $(CSRC:.c=.o)
 POBJS = $(PSRC:.c=.o)
 
-all: proxy compress
+all: client proxy server compress
+
+client: $(COBJS)
+	$(LINKER) $(LFLAGS) $(COBJS) -o $@
+
+server: $(SOBJS)
+	$(LINKER) $(LFLAGS) $(SOBJS) -o $@
 
 proxy: $(POBJS)
 	$(LINKER) $(LFLAGS) $(POBJS) -o $@

@@ -20,7 +20,7 @@ void * pc_manager(void* args) {
   }
 
 	int True = 1;
-	setsockopt(s_socket, SOL_SOCKET, SO_REUSEADDR, (char*) &True, sizeof(TRUE));
+	setsockopt(s_socket, SOL_SOCKET, SO_REUSEADDR, (char*) &True, sizeof(True));
 
 
   s_addr.sin_addr.s_addr=INADDR_ANY;
@@ -71,6 +71,7 @@ void pc_start(int port, char* host) {
   args->request_list = &request_list;
   args->done = 0;
 	args->host = host;
+	pthread_mutex_init(&args->rpc_lock, NULL);
 
   pthreads = (pthread_t**) malloc(sizeof(pthread_t)*MAX_PROXY_THREADS);
 

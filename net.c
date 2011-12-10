@@ -159,6 +159,7 @@ size_t r_data_tv_c(int fd, char** buf, size_t* bs, struct timeval* restrict init
 			size_t ns = *bs;
 			chunk = ns/2;
 			*bs += chunk;
+			printf("buffer size: %d\n", *bs);
 			errno = 0;
 			ptr = realloc(*buf, *bs);
 			if(!ptr) {
@@ -170,7 +171,7 @@ size_t r_data_tv_c(int fd, char** buf, size_t* bs, struct timeval* restrict init
 			}
 			--chunk;
 		}
-		ptr = *buf + r - 1;
+		ptr = *buf + r;
 	} while(1);
 	return r;
 }
