@@ -1,6 +1,6 @@
 CC			= gcc
-CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
-#CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
+#CFLAGS		= -Wall -std=gnu99 ${DEBUGFLAG} -DDEBUG
+CFLAGS		= -Wall -std=gnu99 ${OPTFLAG} -DNDEBUG
 OPTFLAG		= -O3
 DEBUGFLAG	= -g3 -ggdb 
 LINKER		= gcc
@@ -49,4 +49,4 @@ compress:
 	$(LINKER) $(CFLAGS) jpeg_shrink.c jpeg_xdr.c jpeg_svc.c -o $@ jpeg-6b/lowres.o jpeg-6b/lowres-write.o jpeg-6b/libjpeg.a
 
 clean:
-	rm $(SOBJS) $(COBJS) $(POBJS) client webserver proxy compress
+	rm $(SOBJS) $(COBJS) $(POBJS) client server proxy compress
